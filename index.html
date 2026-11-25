@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="暗影深淵" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0b0b12" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2312101c'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23d4af37' stroke-width='3'/%3E%3Cpath d='M32 12 L42 36 L32 52 L22 36 Z' fill='%239b59b6'/%3E%3Ccircle cx='32' cy='33' r='5' fill='%23ffd700'/%3E%3C/svg%3E" />
+  <title>暗影深淵：狩魔者</title>
+  <style>
+    :root {
+      --bg-dark: #09090f;
+      --panel-bg: rgba(18, 17, 28, 0.94);
+      --panel-border: #3a3352;
+      --gold: #e6c25b;
+      --gold-dim: #9e8236;
+      --crimson: #e74c3c;
+      --cyan: #38bdf8;
+      --purple: #a855f7;
+      --green: #22c55e;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      touch-action: none;
+      overscroll-behavior: none;
+    }
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100dvh;
+      touch-action: none;
+    }
+    .hidden { display: none !important; }
+
+    /* Error Guard */
+    #errorBanner {
+      position: fixed;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      background: rgba(185, 28, 28, 0.95);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      max-width: 92vw;
+      border: 1px solid #fca5a5;
+    }
+
+    /* HUD */
+    #hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .hud-top {
+      position: absolute;
+      top: max(8px, env(safe-area-inset-top));
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .hud-card {
+      background: rgba(13, 13, 22, 0.85);
+      border: 1px solid rgba(230, 194, 91, 0.35);
+      border-radius: 10px;
+      padding: 6px 10px;
+      backdrop-filter: blur(6px);
+      pointer-events: auto;
+    }
+    .bar-wrap {
+      width: 145px;
+      height: 11px;
+      background: #1e1b2e;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 4px;
+      border: 1px solid #332e4d;
+      position: relative;
+    }
+    .bar-fill {
+      height: 100%;
+      transition: width 0.12s linear;
+    }
+    .bar-text {
+      position: absolute;
+      inset: 0;
+      font-size: 9px;
+      line-height: 10px;
+      text-align: center;
+      color: #fff;
+      text-shadow: 0 1px 2px #000;
+      font-weight: 700;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 5px;
+      max-width: 62vw;
+    }
+    .btn-hud {
+      background: linear-gradient(180deg, #27233a, #171524);
+      border: 1px solid #4c436e;
+      color: #f8fafc;
+      padding: 6px 9px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+    }
+    .btn-hud:active { transform: scale(0.95); }
+    .badge-dot {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 9px;
+      min-width: 15px;
+      height: 15px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+      font-weight: 700;
+    }
+
+    /* Stage Timeline & Boss Bar */
+    #stageTimeline {
+      position: absolute;
+      top: calc(max(8px, env(safe-area-inset-top)) + 66px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(360px, 86vw);
+      background: rgba(12, 12, 20, 0.84);
+      border: 1px solid #3f385c;
+      border-radius: 10px;
+      padding: 5px 10px;
+      text-align: center;
+    }
+    .tl-track {
+      height: 7px;
+      background: #1e1b2e;
+      border-radius: 4px;
+      position: relative;
+      margin-top: 4px;
+    }
+    .tl-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #a855f7, #ef4444);
+      border-radius: 4px;
+      width: 0%;
+    }
+    .tl-pin {
+      position: absolute;
+      top: -3px;
+      width: 3px;
+      height: 13px;
+      background: #fbbf24;
+      border-radius: 2px;
+    }
+    #bossHud {
+      position: absolute;
+      top: calc(max(8px, env(safe-area-inset-top)) + 110px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(380px, 90vw);
+      background: rgba(28, 10, 16, 0.9);
+      border: 1px solid #ef4444;
+      border-radius: 10px;
+      padding: 6px 12px;
+      text-align: center;
+    }
+
+    /* Bottom Skills & Dodge */
+    .hud-bottom {
+      position: absolute;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .skill-bar {
+      display: flex;
+      gap: 7px;
+      pointer-events: auto;
+    }
+    .skill-slot {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      background: rgba(16, 15, 26, 0.9);
+      border: 1.5px solid #4c436e;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .skill-slot.active { border-color: var(--gold); }
+    .skill-cd-mask {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.68);
+      pointer-events: none;
+    }
+    .skill-lv {
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      font-size: 9px;
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .skill-auto {
+      position: absolute;
+      bottom: 1px;
+      font-size: 8px;
+      color: #4ade80;
+      font-weight: 700;
+    }
+    #dodgeBtn {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #3b3363, #171426);
+      border: 2px solid var(--gold);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    #dodgeBtn:active { transform: scale(0.92); }
+    #npcInteractBtn {
+      position: absolute;
+      bottom: 102px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #d97706, #b45309);
+      border: 2px solid #fde68a;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 700;
+      pointer-events: auto;
+      box-shadow: 0 4px 20px rgba(217, 119, 6, 0.5);
+      cursor: pointer;
+      animation: pulse 1.4s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.05); }
+    }
+
+    /* Modals & Title */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 6, 12, 0.84);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    .modal {
+      background: var(--panel-bg);
+      border: 1.5px solid var(--panel-border);
+      border-radius: 14px;
+      width: min(640px, 96vw);
+      max-height: 88dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+    }
+    .modal-header {
+      padding: 12px 16px;
+      background: rgba(26, 24, 42, 0.95);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .modal-body {
+      padding: 14px;
+      overflow-y: auto;
+      touch-action: pan-y;
+      flex: 1;
+    }
+    .btn {
+      background: linear-gradient(180deg, #332d4d, #211d33);
+      border: 1px solid #594f82;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-gold {
+      background: linear-gradient(180deg, #d97706, #92400e);
+      border-color: #fbbf24;
+      color: #fff;
+    }
+    .btn-green {
+      background: linear-gradient(180deg, #16a34a, #14532d);
+      border-color: #4ade80;
+    }
+    .btn-red {
+      background: linear-gradient(180deg, #dc2626, #7f1d1d);
+      border-color: #f87171;
+    }
+
+    /* Class & Gender Grid */
+    .gender-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .gender-btn {
+      flex: 1;
+      max-width: 170px;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1.5px solid #3f385c;
+      background: #171524;
+      color: #cbd5e1;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .gender-btn.selected {
+      border-color: var(--gold);
+      background: rgba(230, 194, 91, 0.16);
+      color: var(--gold);
+    }
+    .class-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 10px;
+    }
+    .class-card {
+      background: #161423;
+      border: 1.5px solid #352f4d;
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .class-card.selected {
+      border-color: var(--gold);
+      background: rgba(230, 194, 91, 0.12);
+    }
+
+    /* Equipment 10-slot & 100-bag */
+    .equip-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .equip-slot {
+      background: #151321;
+      border: 1.5px solid #383252;
+      border-radius: 8px;
+      padding: 6px 4px;
+      text-align: center;
+      min-height: 62px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 11px;
+    }
+    .bag-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+      gap: 6px;
+    }
+    .bag-cell {
+      aspect-ratio: 1;
+      background: #14121f;
+      border: 1.5px solid #2e2945;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      position: relative;
+      cursor: pointer;
+    }
+    .rarity-0 { border-color: #64748b !important; color: #e2e8f0; }
+    .rarity-1 { border-color: #38bdf8 !important; color: #7dd3fc; }
+    .rarity-2 { border-color: #facc15 !important; color: #fef08a; }
+    .rarity-3 { border-color: #f97316 !important; color: #fdba74; }
+
+    /* Skill Tree & Stats */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      background: #161423;
+      border: 1px solid #322c4a;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    .tree-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .tree-tab {
+      flex: 1;
+      padding: 7px 6px;
+      background: #161423;
+      border: 1px solid #3a3352;
+      border-radius: 8px;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tree-tab.active {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(230, 194, 91, 0.14);
+    }
+    .tree-node {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #161423;
+      border: 1px solid #36304f;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 7px;
+      gap: 8px;
+    }
+    .tree-node.locked { opacity: 0.55; }
+
+    /* Blessing Cards */
+    .card-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 10px;
+    }
+    .blessing-card {
+      background: linear-gradient(180deg, #211d36, #141222);
+      border: 1.5px solid #594f82;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .blessing-card:hover, .blessing-card:active {
+      border-color: var(--gold);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div id="errorBanner" class="hidden"></div>
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-card">
+        <div style="font-size:12px;font-weight:700;color:var(--gold)" id="hudTitle">庇護聖所</div>
+        <div style="font-size:11px;color:#cbd5e1" id="hudSub">英雄 Lv.1 | 任務 Lv.1 | 💰0</div>
+        <div class="bar-wrap">
+          <div class="bar-fill" id="hpBar" style="background:linear-gradient(90deg,#dc2626,#ef4444);width:100%"></div>
+          <div class="bar-text" id="hpText">100 / 100</div>
+        </div>
+        <div class="bar-wrap" style="height:8px;margin-top:3px">
+          <div class="bar-fill" id="xpBar" style="background:linear-gradient(90deg,#0284c7,#38bdf8);width:0%"></div>
+          <div class="bar-text" id="xpText" style="font-size:8px;line-height:7px">EXP 0%</div>
+        </div>
+      </div>
+
+      <div class="toolbar" id="townToolbar">
+        <button class="btn-hud" onclick="openModal('equipModal')">🎒 裝備欄</button>
+        <button class="btn-hud" onclick="openModal('statModal')">📊 屬性<span class="badge-dot hidden" id="statBadge">0</span></button>
+        <button class="btn-hud" onclick="openModal('treeModal')">🌳 技能樹<span class="badge-dot hidden" id="treeBadge">0</span></button>
+        <button class="btn-hud" onclick="openModal('saveModal')">💾 存檔</button>
+      </div>
+
+      <div class="toolbar hidden" id="stageToolbar">
+        <button class="btn-hud" id="zoomBtn" onclick="cycleZoom()">🔍 0.70x</button>
+        <button class="btn-hud" onclick="retreatToTown()">🏃 撤退回城</button>
+      </div>
+    </div>
+
+    <div id="stageTimeline" class="hidden">
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700">
+        <span id="stageNameHud">第1關</span>
+        <span id="stageClock">00:00 / 07:30</span>
+        <span id="killCountHud">擊殺: 0</span>
+      </div>
+      <div class="tl-track">
+        <div class="tl-fill" id="tlFill"></div>
+        <div class="tl-pin" style="left:20%"></div>
+        <div class="tl-pin" style="left:40%"></div>
+        <div class="tl-pin" style="left:60%"></div>
+        <div class="tl-pin" style="left:80%"></div>
+        <div class="tl-pin" style="left:99%;background:#ef4444"></div>
+      </div>
+    </div>
+
+    <div id="bossHud" class="hidden">
+      <div style="font-size:12px;font-weight:700;color:#fca5a5" id="bossNameHud">深淵首領</div>
+      <div class="bar-wrap" style="width:100%;height:12px">
+        <div class="bar-fill" id="bossHpBar" style="background:linear-gradient(90deg,#991b1b,#ef4444);width:100%"></div>
+        <div class="bar-text" id="bossHpText">1000 / 1000</div>
+      </div>
+    </div>
+
+    <button id="npcInteractBtn" class="hidden" onclick="interactNearestNpc()">💬 與 NPC 對話</button>
+
+    <div class="hud-bottom">
+      <div class="skill-bar" id="skillBar"></div>
+      <button id="dodgeBtn" onpointerdown="triggerDodge(event)">
+        <span id="dodgeLabel">暗影步</span>
+        <span id="dodgeCdText" style="font-size:10px;color:#fde68a">就緒</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Title / Character Creation -->
+  <div id="titleOverlay" class="overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">⚔️ 暗影深淵：狩魔者</div>
+        <span style="font-size:11px;color:var(--text-muted)">純淨暗黑割草動作 RPG</span>
+      </div>
+      <div class="modal-body">
+        <div id="continueBox" class="hidden" style="background:rgba(34,197,94,0.14);border:1px solid #22c55e;border-radius:10px;padding:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#86efac">偵測到冒險存檔</div>
+            <div style="font-size:11px;color:#cbd5e1" id="saveSummaryText">任務等級 Lv.1</div>
+          </div>
+          <button class="btn btn-green" onclick="continueGame()">▶ 繼續冒險</button>
+        </div>
+
+        <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:6px;text-align:center">1. 選擇英雄性別</div>
+        <div class="gender-row">
+          <button class="gender-btn selected" id="genderM" onclick="selectGender('M')">♂ 男性英雄</button>
+          <button class="gender-btn" id="genderF" onclick="selectGender('F')">♀ 女性英雄</button>
+        </div>
+
+        <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:6px;text-align:center">2. 選擇職業</div>
+        <div class="class-grid" id="classGrid"></div>
+
+        <div style="margin-top:14px;display:flex;justify-content:center">
+          <button class="btn btn-gold" style="width:100%;max-width:280px;padding:11px;font-size:15px" onclick="startNewGame()">踏入庇護聖所</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic Modal Container -->
+  <div id="dynamicOverlay" class="overlay hidden" onclick="if(event.target===this && canCloseModal) closeModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="dynTitle">視窗</div>
+        <div style="display:flex;gap:6px;align-items:center" id="dynHeaderActions"></div>
+      </div>
+      <div class="modal-body" id="dynBody"></div>
+    </div>
+  </div>
+
+<script>
+window.onerror = function(msg, src, line) {
+  const b = document.getElementById('errorBanner');
+  if (b) {
+    b.textContent = '執行提示: ' + msg + ' (L' + line + ')';
+    b.classList.remove('hidden');
+  }
+};
+
+/* ==================== DATA DEFINITIONS ==================== */
+const SAVE_KEY = 'shadow_abyss_save_v5';
+
+const EQUIP_SLOTS = [
+  { id: 'weapon', name: '主手武器', icon: '⚔️' },
+  { id: 'offhand', name: '副手/盾', icon: '🛡️' },
+  { id: 'hat', name: '帽子', icon: '🎩' },
+  { id: 'armor', name: '衣服', icon: '👕' },
+  { id: 'pants', name: '褲子', icon: '👖' },
+  { id: 'boots', name: '鞋子', icon: '👢' },
+  { id: 'head1', name: '頭飾 1', icon: '👑' },
+  { id: 'head2', name: '頭飾 2', icon: '🎀' },
+  { id: 'acc1', name: '飾品 1', icon: '💍' },
+  { id: 'acc2', name: '飾品 2', icon: '📿' }
+];
+
+const RARITIES = [
+  { name: '普通', color: '#94a3b8', mult: 1.0 },
+  { name: '魔法', color: '#38bdf8', mult: 1.25 },
+  { name: '稀有', color: '#facc15', mult: 1.55 },
+  { name: '傳奇', color: '#f97316', mult: 1.95 }
+];
+
+const CLASSES = {
+  mage: {
+    id: 'mage', name: '法師', icon: '🔮', color: '#38bdf8', attackType: 'ranged', dodgeName: '暗影步',
+    desc: '遠程奧術彈普攻，擅長大範圍元素連鎖與控場',
+    base: { hp: 110, atk: 14, spd: 185, crit: 0.08, cdr: 0.05 },
+    skills: [
+      { id: 'chain_lightning', name: '連鎖閃電', icon: '⚡', cd: 2.2, dmg: 1.15, desc: '高壓電弧在多名敵人間連續彈跳' },
+      { id: 'frost_nova', name: '霜凍新星', icon: '❄️', cd: 3.4, dmg: 1.1, desc: '周身爆發寒冰衝擊波並大幅減速敵人' },
+      { id: 'meteor', name: '隕石術', icon: '☄️', cd: 4.0, dmg: 1.85, desc: '鎖定密集敵群降下燃燒隕石與火海' },
+      { id: 'arcane_orb', name: '秘法軌彈', icon: '🔮', cd: 1.8, dmg: 0.95, desc: '發射多枚自動追蹤秘法飛彈' },
+      { id: 'storm_sphere', name: '雷暴光球', icon: '🌐', cd: 3.8, dmg: 1.25, desc: '釋放緩慢推進並持續電擊周圍的雷球' },
+      { id: 'flame_vortex', name: '烈焰風暴', icon: '🌪️', cd: 4.2, dmg: 1.4, desc: '召喚旋轉火龍捲持續絞殺目標區域' },
+      { id: 'ice_lance', name: '冰霜長槍', icon: '🗡️', cd: 2.0, dmg: 1.35, desc: '高速穿透冰槍，對減速目標造成雙倍暴擊' }
+    ],
+    trees: [
+      { name: '烈焰隕星流', nodes: [
+        { id: 'm_f1', name: '余燼增幅', max: 3, desc: '火焰與隕石技能傷害 +12%/級', stat: 'skillDmg', val: 0.12 },
+        { id: 'm_f2', name: '廣域爆燃', max: 3, desc: '全技能範圍半徑 +10%/級', stat: 'area', val: 0.10 },
+        { id: 'm_f3', name: '雙星墜落', max: 2, desc: '技能額外目標/投射物 +1/級', stat: 'proj', val: 1 },
+        { id: 'm_f4', name: '灼熱暴擊', max: 3, desc: '暴擊傷害 +22%/級', stat: 'critDmg', val: 0.22 },
+        { id: 'm_f5', name: '末日火雨', max: 2, desc: '全技能傷害 +20%/級', stat: 'skillDmg', val: 0.20 },
+        { id: 'm_f6', name: '奧義：焚天魔導', max: 1, desc: '技能傷害 +35% 且目標數 +1', stat: 'cap_mf', val: 1 }
+      ]},
+      { name: '雷霆連鎖流', nodes: [
+        { id: 'm_l1', name: '高壓傳導', max: 3, desc: '技能冷卻縮減 +6%/級', stat: 'cdr', val: 0.06 },
+        { id: 'm_l2', name: '電弧跳躍', max: 3, desc: '全技能目標/彈跳數 +1/級', stat: 'proj', val: 1 },
+        { id: 'm_l3', name: '超載核心', max: 3, desc: '暴擊率 +5%/級', stat: 'crit', val: 0.05 },
+        { id: 'm_l4', name: '迅捷施法', max: 3, desc: '移動速度 +7%/級，冷卻 +5%/級', stat: 'cdr', val: 0.05 },
+        { id: 'm_l5', name: '雷神之怒', max: 2, desc: '全技能傷害 +18%/級', stat: 'skillDmg', val: 0.18 },
+        { id: 'm_l6', name: '奧義：萬雷天牢', max: 1, desc: '冷卻縮減 +18% 且目標數 +2', stat: 'cap_ml', val: 1 }
+      ]},
+      { name: '永凍控場流', nodes: [
+        { id: 'm_i1', name: '極寒護體', max: 3, desc: '最大生命 +14%/級', stat: 'hpPct', val: 0.14 },
+        { id: 'm_i2', name: '冰霜擴散', max: 3, desc: '技能範圍 +12%/級', stat: 'area', val: 0.12 },
+        { id: 'm_i3', name: '碎冰重擊', max: 3, desc: '暴擊傷害 +20%/級', stat: 'critDmg', val: 0.20 },
+        { id: 'm_i4', name: '寒冰屏障', max: 3, desc: '傷害減免 +5%/級', stat: 'dr', val: 0.05 },
+        { id: 'm_i5', name: '絕對零度', max: 2, desc: '全技能冷卻縮減 +8%/級', stat: 'cdr', val: 0.08 },
+        { id: 'm_i6', name: '奧義：冰河紀元', max: 1, desc: '範圍 +30%、生命 +30%、技能傷 +25%', stat: 'cap_mi', val: 1 }
+      ]}
+    ]
+  },
+  berserker: {
+    id: 'berserker', name: '狂戰士', icon: '🪓', color: '#ef4444', attackType: 'melee', dodgeName: '暗影步',
+    desc: '近戰重型弧形斬擊，高生命嗜血與貼身旋風爆發',
+    base: { hp: 155, atk: 16, spd: 192, crit: 0.07, cdr: 0.02 },
+    skills: [
+      { id: 'whirlwind', name: '旋風斬', icon: '🌀', cd: 2.4, dmg: 1.25, desc: '繞身揮出高速迴旋斬擊絞殺近身敵群' },
+      { id: 'blood_cleave', name: '血怒重劈', icon: '🩸', cd: 2.6, dmg: 1.5, desc: '朝敵群重劈出裂地血斬並回復少量生命' },
+      { id: 'warcry', name: '戰吼震波', icon: '📣', cd: 4.0, dmg: 1.05, desc: '發出怒吼震退敵人並提升自身攻速' },
+      { id: 'ground_slam', name: '裂地猛擊', icon: '💥', cd: 3.4, dmg: 1.65, desc: '重擊地面產生震波與碎石飛濺' },
+      { id: 'flying_axes', name: '狂風飛斧', icon: '🪓', cd: 2.3, dmg: 1.15, desc: '朝四周拋出迴旋飛斧收割怪群' },
+      { id: 'lava_stomp', name: '熔岩踐踏', icon: '🌋', cd: 3.6, dmg: 1.45, desc: '迸發裂地岩漿波紋灼燒周圍魔物' },
+      { id: 'blood_crescent', name: '血魂斬擊', icon: '🌙', cd: 2.8, dmg: 1.4, desc: '揮出巨型血氣月牙波貫穿前方敵陣' }
+    ],
+    trees: [
+      { name: '狂怒旋風流', nodes: [
+        { id: 'b_w1', name: '利刃風暴', max: 3, desc: '近戰與旋風技能傷害 +12%/級', stat: 'skillDmg', val: 0.12 },
+        { id: 'b_w2', name: '巨斧橫掃', max: 3, desc: '技能範圍半徑 +12%/級', stat: 'area', val: 0.12 },
+        { id: 'b_w3', name: '疾風步伐', max: 3, desc: '移動速度 +8%/級', stat: 'spdPct', val: 0.08 },
+        { id: 'b_w4', name: '連環飛斧', max: 2, desc: '技能額外目標/投射物 +1/級', stat: 'proj', val: 1 },
+        { id: 'b_w5', name: '無盡狂怒', max: 2, desc: '全技能冷卻縮減 +8%/級', stat: 'cdr', val: 0.08 },
+        { id: 'b_w6', name: '奧義：血風暴君', max: 1, desc: '技能範圍 +35% 且技能傷害 +35%', stat: 'cap_bw', val: 1 }
+      ]},
+      { name: '嗜血狂戰流', nodes: [
+        { id: 'b_b1', name: '渴血本能', max: 3, desc: '擊殺回復生命 +2/級', stat: 'leech', val: 2 },
+        { id: 'b_b2', name: '蠻荒體魄', max: 3, desc: '最大生命 +15%/級', stat: 'hpPct', val: 0.15 },
+        { id: 'b_b3', name: '殘暴重擊', max: 3, desc: '暴擊率 +5%/級', stat: 'crit', val: 0.05 },
+        { id: 'b_b4', name: '處決狂熱', max: 3, desc: '暴擊傷害 +24%/級', stat: 'critDmg', val: 0.24 },
+        { id: 'b_b5', name: '鋼鐵意志', max: 2, desc: '傷害減免 +6%/級', stat: 'dr', val: 0.06 },
+        { id: 'b_b6', name: '奧義：不滅戰神', max: 1, desc: '生命 +40%、吸血 +5、傷害 +25%', stat: 'cap_bb', val: 1 }
+      ]},
+      { name: '裂地重擊流', nodes: [
+        { id: 'b_g1', name: '千鈞之力', max: 3, desc: '基礎與技能攻擊力 +12%/級', stat: 'atkPct', val: 0.12 },
+        { id: 'b_g2', name: '餘震擴散', max: 3, desc: '技能範圍 +10%/級', stat: 'area', val: 0.10 },
+        { id: 'b_g3', name: '碎甲一擊', max: 3, desc: '全技能傷害 +13%/級', stat: 'skillDmg', val: 0.13 },
+        { id: 'b_g4', name: '戰神號令', max: 3, desc: '冷卻縮減 +6%/級', stat: 'cdr', val: 0.06 },
+        { id: 'b_g5', name: '山崩地裂', max: 2, desc: '目標與投射物 +1/級', stat: 'proj', val: 1 },
+        { id: 'b_g6', name: '奧義：滅世震擊', max: 1, desc: '攻擊力 +35% 且暴擊傷害 +50%', stat: 'cap_bg', val: 1 }
+      ]}
+    ]
+  },
+  hunter: {
+    id: 'hunter', name: '狩魔獵人', icon: '🏹', color: '#22c55e', attackType: 'ranged', dodgeName: '暗影步',
+    desc: '遠程高機動獵魔箭矢，擅長直線貫穿與高頻暴擊彈幕',
+    base: { hp: 120, atk: 15, spd: 205, crit: 0.12, cdr: 0.04 },
+    skills: [
+      { id: 'pierce_volley', name: '穿心箭雨', icon: '🏹', cd: 2.1, dmg: 1.15, desc: '齊射多支高速穿透箭矢貫穿整排敵人' },
+      { id: 'chakram', name: '連環飛刃', icon: '🪃', cd: 2.5, dmg: 1.25, desc: '拋出迴旋雙刃切割中距離密集怪群' },
+      { id: 'shadow_trap', name: '暗影陷阱', icon: '🕸️', cd: 3.2, dmg: 1.55, desc: '在周圍布下引爆陷阱重創並減速敵人' },
+      { id: 'rapid_fire', name: '疾風連射', icon: '💨', cd: 1.7, dmg: 0.92, desc: '高頻射出多發追擊獵魔箭矢' },
+      { id: 'explosive_arrow', name: '爆裂箭矢', icon: '💣', cd: 2.7, dmg: 1.45, desc: '命中目標引發二次連環火藥爆炸' },
+      { id: 'blade_rain', name: '暗影刃雨', icon: '🗡️', cd: 3.5, dmg: 1.5, desc: '在敵群上方降下密集暗影飛刀雨' },
+      { id: 'sentry_turret', name: '雷霆箭塔', icon: '🗼', cd: 4.0, dmg: 1.2, desc: '釋放自動連鎖電擊的獵魔箭塔脈衝' }
+    ],
+    trees: [
+      { name: '穿心箭雨流', nodes: [
+        { id: 'h_p1', name: '銳利箭鏃', max: 3, desc: '攻擊力 +11%/級', stat: 'atkPct', val: 0.11 },
+        { id: 'h_p2', name: '多重齊射', max: 3, desc: '全技能投射物/目標 +1/級', stat: 'proj', val: 1 },
+        { id: 'h_p3', name: '鷹眼鎖定', max: 3, desc: '暴擊率 +6%/級', stat: 'crit', val: 0.06 },
+        { id: 'h_p4', name: '致命穿刺', max: 3, desc: '暴擊傷害 +25%/級', stat: 'critDmg', val: 0.25 },
+        { id: 'h_p5', name: '箭雨風暴', max: 2, desc: '技能冷卻縮減 +7%/級', stat: 'cdr', val: 0.07 },
+        { id: 'h_p6', name: '奧義：萬箭穿心', max: 1, desc: '投射物 +2 且暴擊傷害 +55%', stat: 'cap_hp', val: 1 }
+      ]},
+      { name: '疾風連射流', nodes: [
+        { id: 'h_r1', name: '靈巧身法', max: 3, desc: '移動速度 +8%/級', stat: 'spdPct', val: 0.08 },
+        { id: 'h_r2', name: '快速裝填', max: 3, desc: '全技能冷卻縮減 +6%/級', stat: 'cdr', val: 0.06 },
+        { id: 'h_r3', name: '風行閃避', max: 3, desc: '閃避率 +4%/級', stat: 'dodge', val: 0.04 },
+        { id: 'h_r4', name: '連環彈幕', max: 2, desc: '技能投射物 +1/級', stat: 'proj', val: 1 },
+        { id: 'h_r5', name: '獵殺時刻', max: 3, desc: '全技能傷害 +14%/級', stat: 'skillDmg', val: 0.14 },
+        { id: 'h_r6', name: '奧義：幻影神射手', max: 1, desc: '冷卻縮減 +18%、移速 +20%、投射物 +1', stat: 'cap_hr', val: 1 }
+      ]},
+      { name: '暗影陷阱流', nodes: [
+        { id: 'h_t1', name: '高爆火藥', max: 3, desc: '技能範圍 +12%/級', stat: 'area', val: 0.12 },
+        { id: 'h_t2', name: '致命機關', max: 3, desc: '全技能傷害 +13%/級', stat: 'skillDmg', val: 0.13 },
+        { id: 'h_t3', name: '暗影斗篷', max: 3, desc: '最大生命 +13%/級', stat: 'hpPct', val: 0.13 },
+        { id: 'h_t4', name: '連環引爆', max: 2, desc: '技能目標/投射物 +1/級', stat: 'proj', val: 1 },
+        { id: 'h_t5', name: '秘寶嗅覺', max: 3, desc: '掉寶幸運 +15%/級', stat: 'luckPct', val: 0.15 },
+        { id: 'h_t6', name: '奧義：深淵獵殺網', max: 1, desc: '範圍 +35% 且全技能傷害 +35%', stat: 'cap_ht', val: 1 }
+      ]}
+    ]
+  },
+  necro: {
+    id: 'necro', name: '死靈法師', icon: '💀', color: '#a855f7', attackType: 'ranged', dodgeName: '暗影步',
+    desc: '遠程暗影骨矢普攻，驅使骸骨軍團、屍爆與瘟疫詛咒',
+    base: { hp: 125, atk: 14, spd: 185, crit: 0.07, cdr: 0.05 },
+    skills: [
+      { id: 'skeleton_army', name: '骸骨軍團', icon: '💀', cd: 3.5, dmg: 1.1, desc: '召喚自動衝鋒撕咬魔物的骸骨戰士' },
+      { id: 'corpse_explosion', name: '屍爆術', icon: '💣', cd: 2.6, dmg: 1.55, desc: '引爆敵群周圍的暗影屍骸造成範圍轟炸' },
+      { id: 'decrepify', name: '衰老詛咒', icon: '紫', cd: 3.4, dmg: 1.15, desc: '展開詛咒力場腐蝕並大幅緩速敵軍' },
+      { id: 'bone_spear', name: '白骨之矛', icon: '🦴', cd: 2.0, dmg: 1.25, desc: '發射高穿透白骨長矛刺穿成排敵人' },
+      { id: 'wraith_rush', name: '怨靈衝擊', icon: '👻', cd: 2.4, dmg: 1.2, desc: '釋放成群追蹤怨靈撕咬周圍魔物' },
+      { id: 'poison_nova', name: '劇毒新星', icon: '☠️', cd: 3.2, dmg: 1.35, desc: '向四周擴散高濃度瘟疫毒環持續腐蝕' },
+      { id: 'bone_prison', name: '骨牢尖刺', icon: '⛓️', cd: 3.6, dmg: 1.5, desc: '從地底刺出成排骨刺重創敵群' }
+    ],
+    trees: [
+      { name: '亡靈大軍流', nodes: [
+        { id: 'n_s1', name: '白骨強化', max: 3, desc: '全技能與召喚傷害 +12%/級', stat: 'skillDmg', val: 0.12 },
+        { id: 'n_s2', name: '軍團擴編', max: 3, desc: '召喚與投射物數量 +1/級', stat: 'proj', val: 1 },
+        { id: 'n_s3', name: '靈魂汲取', max: 3, desc: '擊殺回復生命 +2/級', stat: 'leech', val: 2 },
+        { id: 'n_s4', name: '迅捷復甦', max: 3, desc: '冷卻縮減 +6%/級', stat: 'cdr', val: 0.06 },
+        { id: 'n_s5', name: '骸骨護盾', max: 2, desc: '最大生命 +18%/級', stat: 'hpPct', val: 0.18 },
+        { id: 'n_s6', name: '奧義：亡靈天災', max: 1, desc: '召喚/投射物 +2 且技能傷害 +30%', stat: 'cap_ns', val: 1 }
+      ]},
+      { name: '瘟疫屍爆流', nodes: [
+        { id: 'n_c1', name: '腐蝕擴散', max: 3, desc: '技能範圍半徑 +13%/級', stat: 'area', val: 0.13 },
+        { id: 'n_c2', name: '連環爆破', max: 3, desc: '全技能傷害 +13%/級', stat: 'skillDmg', val: 0.13 },
+        { id: 'n_c3', name: '劇毒暴擊', max: 3, desc: '暴擊率 +5%/級', stat: 'crit', val: 0.05 },
+        { id: 'n_c4', name: '死靈爆傷', max: 3, desc: '暴擊傷害 +22%/級', stat: 'critDmg', val: 0.22 },
+        { id: 'n_c5', name: '瘟疫蔓延', max: 2, desc: '目標數 +1/級', stat: 'proj', val: 1 },
+        { id: 'n_c6', name: '奧義：冥界大爆破', max: 1, desc: '範圍 +35%、技能傷害 +35%', stat: 'cap_nc', val: 1 }
+      ]},
+      { name: '衰老詛咒流', nodes: [
+        { id: 'n_d1', name: '暗影精通', max: 3, desc: '冷卻縮減 +6%/級', stat: 'cdr', val: 0.06 },
+        { id: 'n_d2', name: '咒怨纏身', max: 3, desc: '技能範圍 +11%/級', stat: 'area', val: 0.11 },
+        { id: 'n_d3', name: '不死契約', max: 3, desc: '傷害減免 +5%/級', stat: 'dr', val: 0.05 },
+        { id: 'n_d4', name: '靈魂收割', max: 3, desc: '攻擊力 +12%/級', stat: 'atkPct', val: 0.12 },
+        { id: 'n_d5', name: '深淵低語', max: 2, desc: '全技能傷害 +18%/級', stat: 'skillDmg', val: 0.18 },
+        { id: 'n_d6', name: '奧義：永夜冥王', max: 1, desc: '冷卻 +18%、吸血 +4、全傷 +25%', stat: 'cap_nd', val: 1 }
+      ]}
+    ]
+  },
+  paladin: {
+    id: 'paladin', name: '聖騎士', icon: '🛡️', color: '#facc15', attackType: 'melee', dodgeName: '暗影步',
+    desc: '近戰神聖重錘揮擊，兼具高護甲減傷與環繞聖光淨化',
+    base: { hp: 165, atk: 14, spd: 185, crit: 0.07, cdr: 0.04 },
+    skills: [
+      { id: 'blessed_hammer', name: '祝福之錘', icon: '🔨', cd: 2.4, dmg: 1.2, desc: '召喚環繞自身螺旋飛舞的神聖戰錘' },
+      { id: 'consecration', name: '奉獻光環', icon: '✨', cd: 3.4, dmg: 1.15, desc: '展開神聖火圈持續灼燒敵人並回復生命' },
+      { id: 'fist_of_heavens', name: '天堂之拳', icon: '✝️', cd: 2.8, dmg: 1.5, desc: '降下聖光雷擊並四散射出神聖矢彈' },
+      { id: 'shield_bash', name: '聖盾衝擊', icon: '🛡️', cd: 2.5, dmg: 1.35, desc: '震盪盾牌釋放神聖衝擊波擊退前方敵群' },
+      { id: 'judgment_beam', name: '審判聖光', icon: '☀️', cd: 3.6, dmg: 1.55, desc: '從天降下淨化光柱灼燒範圍內魔物' },
+      { id: 'holy_swords', name: '聖靈飛劍', icon: '⚔️', cd: 2.2, dmg: 1.15, desc: '召喚自動飛射穿刺敵人的聖光劍陣' },
+      { id: 'smite_lightning', name: '雷霆懲戒', icon: '⚡', cd: 2.6, dmg: 1.3, desc: '神聖閃電連鎖劈擊多名敵人' }
+    ],
+    trees: [
+      { name: '祝福神錘流', nodes: [
+        { id: 'p_h1', name: '聖錘鍛造', max: 3, desc: '全技能傷害 +12%/級', stat: 'skillDmg', val: 0.12 },
+        { id: 'p_h2', name: '多重聖錘', max: 3, desc: '戰錘與投射物數量 +1/級', stat: 'proj', val: 1 },
+        { id: 'p_h3', name: '光輝擴散', max: 3, desc: '技能範圍 +11%/級', stat: 'area', val: 0.11 },
+        { id: 'p_h4', name: '神聖律動', max: 3, desc: '冷卻縮減 +6%/級', stat: 'cdr', val: 0.06 },
+        { id: 'p_h5', name: '裁決暴擊', max: 2, desc: '暴擊傷害 +25%/級', stat: 'critDmg', val: 0.25 },
+        { id: 'p_h6', name: '奧義：天堂戰錘陣', max: 1, desc: '投射物 +2 且技能傷害 +30%', stat: 'cap_ph', val: 1 }
+      ]},
+      { name: '聖光奉獻流', nodes: [
+        { id: 'p_c1', name: '聖潔之軀', max: 3, desc: '最大生命 +15%/級', stat: 'hpPct', val: 0.15 },
+        { id: 'p_c2', name: '聖光庇佑', max: 3, desc: '傷害減免 +5%/級', stat: 'dr', val: 0.05 },
+        { id: 'p_c3', name: '淨化烈焰', max: 3, desc: '技能範圍 +13%/級', stat: 'area', val: 0.13 },
+        { id: 'p_c4', name: '恩典回復', max: 3, desc: '擊殺回復生命 +2/級', stat: 'leech', val: 2 },
+        { id: 'p_c5', name: '耀眼光芒', max: 2, desc: '全技能傷害 +17%/級', stat: 'skillDmg', val: 0.17 },
+        { id: 'p_c6', name: '奧義：永恆聖殿', max: 1, desc: '生命 +40%、範圍 +30%、減傷 +10%', stat: 'cap_pc', val: 1 }
+      ]},
+      { name: '神盾反擊流', nodes: [
+        { id: 'p_s1', name: '重盾猛擊', max: 3, desc: '基礎與技能攻擊力 +12%/級', stat: 'atkPct', val: 0.12 },
+        { id: 'p_s2', name: '神聖暴擊', max: 3, desc: '暴擊率 +5%/級', stat: 'crit', val: 0.05 },
+        { id: 'p_s3', name: '懲戒電弧', max: 2, desc: '目標數 +1/級', stat: 'proj', val: 1 },
+        { id: 'p_s4', name: '無畏衝鋒', max: 3, desc: '移動速度 +7%/級', stat: 'spdPct', val: 0.07 },
+        { id: 'p_s5', name: '天罰之光', max: 2, desc: '冷卻縮減 +8%/級', stat: 'cdr', val: 0.08 },
+        { id: 'p_s6', name: '奧義：大天使化身', max: 1, desc: '攻擊力 +35% 且全技能傷害 +30%', stat: 'cap_ps', val: 1 }
+      ]}
+    ]
+  },
+  kungfu: {
+    id: 'kungfu', name: '中國古拳法大師', icon: '🥋', color: '#f8fafc', attackType: 'melee', dodgeName: '閃身步',
+    desc: '光頭白衣灰褲武道宗師，近戰剛柔並濟拳腳連擊與獨特「閃身步」',
+    base: { hp: 140, atk: 16, spd: 202, crit: 0.10, cdr: 0.05 },
+    skills: [
+      { id: 'langzi_kick', name: '浪子踢球', icon: '⚽', cd: 2.2, dmg: 1.45, desc: '旋踢發出高速旋轉金色內力氣球貫穿整排敵人並擊退' },
+      { id: 'bear_shake', name: '狗熊哆嗦毛', icon: '🐻', cd: 3.2, dmg: 1.35, desc: '抖動筋骨爆發厚實震盪氣浪，震飛周圍魔物並護體' },
+      { id: 'head_bob', name: '搖頭晃腦', icon: '🙃', cd: 2.8, dmg: 1.15, desc: '施展詭譎晃身步法，朝四周彈射多道高速寸勁氣彈' },
+      { id: 'willow_step', name: '風擺柳碎步', icon: '🌿', cd: 2.5, dmg: 1.3, desc: '分出三道白衣殘影對周圍敵群發動高頻連環掌擊腿掃' },
+      { id: 'monkey_flower', name: '猴子繞花線', icon: '🐒', cd: 3.0, dmg: 1.2, desc: '雙手穿花舞動，召喚∞字軌跡繞身盤旋的青金拳影' },
+      { id: 'hot_foot_five', name: '燙腳五股', icon: '🔥', cd: 3.6, dmg: 1.55, desc: '連續五次高頻猛踏地面，擴散五圈赤金火勁震波' }
+    ],
+    trees: [
+      { name: '剛猛腿勁流', nodes: [
+        { id: 'k_l1', name: '鐵腿功', max: 3, desc: '拳腳與全技能傷害 +12%/級', stat: 'skillDmg', val: 0.12 },
+        { id: 'k_l2', name: '連環蹴鞠', max: 3, desc: '氣勁球與震波目標數 +1/級', stat: 'proj', val: 1 },
+        { id: 'k_l3', name: '烈火踏地', max: 3, desc: '技能範圍半徑 +12%/級', stat: 'area', val: 0.12 },
+        { id: 'k_l4', name: '寸勁爆發', max: 3, desc: '暴擊傷害 +24%/級', stat: 'critDmg', val: 0.24 },
+        { id: 'k_l5', name: '千斤墜', max: 2, desc: '基礎與技能攻擊力 +16%/級', stat: 'atkPct', val: 0.16 },
+        { id: 'k_l6', name: '奧義：無影連環腿', max: 1, desc: '技能傷害 +35% 且目標數 +2', stat: 'cap_kl', val: 1 }
+      ]},
+      { name: '靈猴身法流', nodes: [
+        { id: 'k_m1', name: '梯雲縱', max: 3, desc: '移動速度 +8%/級', stat: 'spdPct', val: 0.08 },
+        { id: 'k_m2', name: '閃身無影', max: 3, desc: '全技能冷卻縮減 +6%/級', stat: 'cdr', val: 0.06 },
+        { id: 'k_m3', name: '醉拳閃避', max: 3, desc: '閃避率 +5%/級', stat: 'dodge', val: 0.05 },
+        { id: 'k_m4', name: '分身幻影', max: 2, desc: '技能投射物/殘影數 +1/級', stat: 'proj', val: 1 },
+        { id: 'k_m5', name: '穿花疾手', max: 3, desc: '暴擊率 +5%/級', stat: 'crit', val: 0.05 },
+        { id: 'k_m6', name: '奧義：萬花迷蹤步', max: 1, desc: '冷卻 +18%、閃避 +12%、移速 +20%', stat: 'cap_km', val: 1 }
+      ]},
+      { name: '熊虎硬氣功', nodes: [
+        { id: 'k_b1', name: '金鐘罩', max: 3, desc: '最大生命 +15%/級', stat: 'hpPct', val: 0.15 },
+        { id: 'k_b2', name: '鐵布衫', max: 3, desc: '傷害減免 +5%/級', stat: 'dr', val: 0.05 },
+        { id: 'k_b3', name: '震山抖毛', max: 3, desc: '技能範圍 +12%/級', stat: 'area', val: 0.12 },
+        { id: 'k_b4', name: '吐納回氣', max: 3, desc: '擊殺回復生命 +2/級', stat: 'leech', val: 2 },
+        { id: 'k_b5', name: '內勁外放', max: 2, desc: '全技能傷害 +18%/級', stat: 'skillDmg', val: 0.18 },
+        { id: 'k_b6', name: '奧義：混元金剛體', max: 1, desc: '生命 +40%、減傷 +10%、全傷 +25%', stat: 'cap_kb', val: 1 }
+      ]}
+    ]
+  }
+};
+
+const TIER_THRESHOLDS = [0, 2, 5, 9, 14, 20];
+
+const STAGES = [
+  { id: 1, name: '第1關：幽暗古林', reqQuest: 1, dropLv: 1, bg: '#101814', grid: '#18261e', obsType: 'tree', hpMult: 1.0, dmgMult: 1.0, bossName: '腐木樹妖王' },
+  { id: 2, name: '第2關：荒蕪石塚', reqQuest: 2, dropLv: 5, bg: '#17161d', grid: '#24222e', obsType: 'pillar', hpMult: 1.45, dmgMult: 1.25, bossName: '墓園守衛者' },
+  { id: 3, name: '第3關：腐化毒沼', reqQuest: 3, dropLv: 10, bg: '#111a12', grid: '#1b2b1d', obsType: 'crate', hpMult: 2.0, dmgMult: 1.5, bossName: '瘟疫沼澤巨獸' },
+  { id: 4, name: '第4關：沉沒聖堂', reqQuest: 4, dropLv: 15, bg: '#121722', grid: '#1c2436', obsType: 'wall', hpMult: 2.75, dmgMult: 1.8, bossName: '墮落大主教' },
+  { id: 5, name: '第5關：永凍冰淵', reqQuest: 5, dropLv: 20, bg: '#0f1c26', grid: '#182d3d', obsType: 'crystal', hpMult: 3.7, dmgMult: 2.15, bossName: '霜骸冰霜巨龍' },
+  { id: 6, name: '第6關：猩紅地牢', reqQuest: 6, dropLv: 25, bg: '#1f1014', grid: '#30181f', obsType: 'wall', hpMult: 4.9, dmgMult: 2.55, bossName: '血獄典獄長' },
+  { id: 7, name: '第7關：熔岩煉獄', reqQuest: 7, dropLv: 30, bg: '#21120c', grid: '#361d13', obsType: 'obsidian', hpMult: 6.4, dmgMult: 3.0, bossName: '熔火炎魔領主' },
+  { id: 8, name: '第8關：虛空裂隙', reqQuest: 8, dropLv: 35, bg: '#171024', grid: '#261a3b', obsType: 'crystal', hpMult: 8.3, dmgMult: 3.55, bossName: '虛空吞噬者' },
+  { id: 9, name: '第9關：骸骨堡壘', reqQuest: 9, dropLv: 42, bg: '#1a1816', grid: '#2b2824', obsType: 'pillar', hpMult: 10.8, dmgMult: 4.2, bossName: '不朽骸骨大帝' },
+  { id: 10, name: '第10關：深淵終焉王座', reqQuest: 10, dropLv: 50, bg: '#190b1c', grid: '#2b1230', obsType: 'obsidian', hpMult: 14.0, dmgMult: 5.0, bossName: '深淵終焉魔王' }
+];
+
+const NPCS = [
+  { id: 'cain', name: '遠征指揮官・凱恩', icon: '⚔️', x: 0, y: -150, color: '#38bdf8', desc: '開啟十大深淵關卡傳送門' },
+  { id: 'priestess', name: '神諭祭司・艾莉絲', icon: '✨', x: 0, y: -310, color: '#fde047', desc: '祝福強化殿堂與解鎖升級重抽上限' },
+  { id: 'smith', name: '鐵匠・赫菲斯托斯', icon: '⚒️', x: -240, y: -40, color: '#f97316', desc: '消耗金幣強化已穿戴的十部位裝備' },
+  { id: 'kadala', name: '神秘軍需官・卡達拉', icon: '💰', x: 240, y: -40, color: '#a855f7', desc: '抽取神秘職業裝備盲盒' },
+  { id: 'lilith', name: '秘法學者・莉莉絲', icon: '🔮', x: 0, y: 210, color: '#f472b6', desc: '自由切換六大職業與英雄性別' }
+];
+
+const REROLL_COSTS = [2, 8, 18, 32, 50];
+
+/* ==================== GAME STATE ==================== */
+let selectedClass = 'mage';
+let selectedGender = 'M';
+let canCloseModal = true;
+let bagFilter = 'all';
+let activeTreeTab = 0;
+
+function createDefaultState() {
+  return {
+    classId: 'mage',
+    gender: 'M',
+    heroLv: 1,
+    heroExp: 0,
+    questLv: 1,
+    gold: 120,
+    statPts: 0,
+    treePts: 0,
+    blessingPts: 2,
+    stats: { str: 0, agi: 0, int: 0, vit: 0, luk: 0 },
+    treeNodes: {},
+    blessings: { rerollMax: 0, cdr: 0, critDmg: 0, hp: 0, pickup: 0, luck: 0 },
+    equipped: {
+      weapon: null, offhand: null, hat: null, armor: null, pants: null,
+      boots: null, head1: null, head2: null, acc1: null, acc2: null
+    },
+    bag: [],
+    stageClears: {}
+  };
+}
+
+let state = createDefaultState();
+
+function saveGame(silent = true) {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    if (!silent) showToast('💾 遊戲進度已保存');
+  } catch (e) {}
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    state = Object.assign(createDefaultState(), parsed);
+    state.stats = Object.assign({ str: 0, agi: 0, int: 0, vit: 0, luk: 0 }, parsed.stats || {});
+    state.blessings = Object.assign({ rerollMax: 0, cdr: 0, critDmg: 0, hp: 0, pickup: 0, luck: 0 }, parsed.blessings || {});
+    state.equipped = Object.assign(createDefaultState().equipped, parsed.equipped || {});
+    if (!Array.isArray(state.bag)) state.bag = [];
+    if (!CLASSES[state.classId]) state.classId = 'mage';
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* ==================== AUDIO ENGINE ==================== */
+let audioCtx = null;
+function playTone(freq, type = 'sine', dur = 0.08, vol = 0.06) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(40, freq * 0.55), audioCtx.currentTime + dur);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+
+/* ==================== EQUIPMENT GENERATOR ==================== */
+const SLOT_PREFIXES = {
+  weapon: ['深淵', '破曉', '獵魔', '煉獄', '星辰', '武道'],
+  offhand: ['聖盾', '魔導書', '秘法典', '鐵壁', '魂匣', '護腕'],
+  hat: ['兜帽', '戰盔', '法冠', '斗笠', '面罩', '聖冠'],
+  armor: ['戰鎧', '法袍', '皮甲', '練功服', '骨甲', '聖鎧'],
+  pants: ['護腿', '長褲', '戰裙', '符文褲', '疾風褲', '重甲腿'],
+  boots: ['戰靴', '布鞋', '疾行靴', '踏雲履', '暗影靴', '聖靴'],
+  head1: ['王冠', '角飾', '髮帶', '光環', '面具', '羽飾'],
+  head2: ['耳墜', '紋章', '靈珠', '護額', '戰紋', '秘印'],
+  acc1: ['指環', '魔戒', '血戒', '星戒', '龍戒', '聖戒'],
+  acc2: ['護符', '項鍊', '圖騰', '聖物', '玉佩', '徽章']
+};
+
+function generateEquipment(reqLv, forceRarity = null) {
+  const slotObj = EQUIP_SLOTS[Math.floor(Math.random() * EQUIP_SLOTS.length)];
+  const luckBonus = (state.stats.luk * 0.004) + (state.blessings.luck * 0.02);
+  let rarity = 0;
+  if (forceRarity !== null) {
+    rarity = forceRarity;
+  } else {
+    const r = Math.random() - luckBonus;
+    if (r < 0.06) rarity = 3;
+    else if (r < 0.22) rarity = 2;
+    else if (r < 0.55) rarity = 1;
+    else rarity = 0;
+  }
+  const mult = RARITIES[rarity].mult;
+  const lvScale = 1 + (reqLv - 1) * 0.16;
+  const isOffensive = ['weapon', 'acc1', 'acc2', 'head1'].includes(slotObj.id);
+  const atk = isOffensive ? Math.max(1, Math.round((2.2 * lvScale) * mult * (0.9 + Math.random() * 0.2))) : Math.round(0.6 * lvScale * mult);
+  const hp = !isOffensive ? Math.max(4, Math.round((12 * lvScale) * mult * (0.9 + Math.random() * 0.2))) : Math.round(4 * lvScale * mult);
+  const crit = rarity >= 1 ? +(0.01 + rarity * 0.012 + Math.random() * 0.015).toFixed(3) : 0;
+  const cdr = rarity >= 2 ? +(0.015 + rarity * 0.01 + Math.random() * 0.015).toFixed(3) : 0;
+  const prefix = SLOT_PREFIXES[slotObj.id][Math.floor(Math.random() * SLOT_PREFIXES[slotObj.id].length)];
+  return {
+    uid: 'eq_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    slot: slotObj.id,
+    icon: slotObj.icon,
+    name: `${RARITIES[rarity].name}·${prefix}${slotObj.name}`,
+    rarity,
+    reqLv,
+    enhance: 0,
+    atk,
+    hp,
+    crit,
+    cdr
+  };
+}
+
+function getItemScore(item) {
+  if (!item) return 0;
+  const enhMult = 1 + (item.enhance || 0) * 0.12;
+  return Math.round(((item.atk * 4.5) + (item.hp * 0.85) + (item.crit * 220) + (item.cdr * 200)) * enhMult);
+}
+
+function autoEquipStrongest() {
+  let changed = 0;
+  for (const s of EQUIP_SLOTS) {
+    const slotId = s.id;
+    const current = state.equipped[slotId];
+    let bestIdx = -1;
+    let bestScore = getItemScore(current);
+    for (let i = 0; i < state.bag.length; i++) {
+      const it = state.bag[i];
+      if (it.slot === slotId && it.reqLv <= state.heroLv) {
+        const sc = getItemScore(it);
+        if (sc > bestScore) {
+          bestScore = sc;
+          bestIdx = i;
+        }
+      }
+    }
+    if (bestIdx !== -1) {
+      const chosen = state.bag.splice(bestIdx, 1)[0];
+      if (current) state.bag.push(current);
+      state.equipped[slotId] = chosen;
+      changed++;
+    }
+  }
+  saveGame();
+  renderEquipModal();
+  updateHud();
+  showToast(changed > 0 ? `⚡ 已自動換上 ${changed} 件更強裝備！` : '目前已穿戴可裝備的最強神裝');
+}
+
+/* ==================== COMPUTED HERO STATS ==================== */
+function getComputedStats() {
+  const cls = CLASSES[state.classId] || CLASSES.mage;
+  let eqAtk = 0, eqHp = 0, eqCrit = 0, eqCdr = 0;
+  for (const k of Object.keys(state.equipped)) {
+    const it = state.equipped[k];
+    if (it) {
+      const m = 1 + (it.enhance || 0) * 0.12;
+      eqAtk += it.atk * m;
+      eqHp += it.hp * m;
+      eqCrit += it.crit;
+      eqCdr += it.cdr;
+    }
+  }
+
+  let tAtkPct = 0, tHpPct = 0, tCrit = 0, tCritDmg = 0, tCdr = 0, tSkillDmg = 0, tArea = 0, tProj = 0, tSpdPct = 0, tDodge = 0, tDr = 0, tLeech = 0, tLuckPct = 0;
+  for (const tree of cls.trees) {
+    for (const node of tree.nodes) {
+      const lv = state.treeNodes[node.id] || 0;
+      if (!lv) continue;
+      const v = node.val * lv;
+      if (node.stat === 'atkPct') tAtkPct += v;
+      else if (node.stat === 'hpPct') tHpPct += v;
+      else if (node.stat === 'crit') tCrit += v;
+      else if (node.stat === 'critDmg') tCritDmg += v;
+      else if (node.stat === 'cdr') tCdr += v;
+      else if (node.stat === 'skillDmg') tSkillDmg += v;
+      else if (node.stat === 'area') tArea += v;
+      else if (node.stat === 'proj') tProj += v;
+      else if (node.stat === 'spdPct') tSpdPct += v;
+      else if (node.stat === 'dodge') tDodge += v;
+      else if (node.stat === 'dr') tDr += v;
+      else if (node.stat === 'leech') tLeech += v;
+      else if (node.stat === 'luckPct') tLuckPct += v;
+      else if (node.stat.startsWith('cap_')) {
+        tSkillDmg += 0.30;
+        if (['cap_mf','cap_ml','cap_hp','cap_ns','cap_ph','cap_kl'].includes(node.stat)) tProj += 1;
+        if (['cap_mi','cap_bw','cap_ht','cap_nc','cap_pc'].includes(node.stat)) tArea += 0.25;
+        if (['cap_ml','cap_hr','cap_nd','cap_km'].includes(node.stat)) tCdr += 0.15;
+        if (['cap_bb','cap_pc','cap_kb'].includes(node.stat)) tHpPct += 0.30;
+      }
+    }
+  }
+
+  const st = state.stats;
+  const bl = state.blessings;
+  const maxHp = Math.round((cls.base.hp + (state.heroLv - 1) * 14 + eqHp + st.vit * 18) * (1 + tHpPct + bl.hp * 0.06));
+  const atk = Math.round((cls.base.atk + (state.heroLv - 1) * 2.2 + eqAtk + st.str * 2.2 + st.int * 1.4) * (1 + tAtkPct));
+  const spd = Math.round((cls.base.spd + st.agi * 2.5) * (1 + tSpdPct));
+  const crit = Math.min(0.85, cls.base.crit + eqCrit + st.luk * 0.008 + tCrit);
+  const critDmg = 1.65 + st.str * 0.015 + tCritDmg + bl.critDmg * 0.12;
+  const cdr = Math.min(0.65, cls.base.cdr + eqCdr + st.int * 0.007 + tCdr + bl.cdr * 0.03);
+  const dodge = Math.min(0.55, st.agi * 0.006 + tDodge);
+  const dr = Math.min(0.60, st.vit * 0.005 + tDr);
+  const skillDmgMult = 1 + st.int * 0.018 + tSkillDmg + (runBuffs.skillDmg || 0);
+  const areaMult = 1 + tArea + (runBuffs.area || 0);
+  const extraProj = Math.floor(tProj + (runBuffs.proj || 0));
+  const effectiveCdr = Math.min(0.75, cdr + (runBuffs.cdr || 0));
+  const basicMult = 1 + (runBuffs.basicDmg || 0);
+  const pickupRadius = 75 * (1 + bl.pickup * 0.15 + (runBuffs.pickup || 0));
+
+  return { maxHp, atk, spd, crit, critDmg, cdr: effectiveCdr, dodge, dr, skillDmgMult, areaMult, extraProj, basicMult, leech: tLeech, pickupRadius };
+}
+
+/* ==================== RUNTIME WORLD & COMBAT ==================== */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let viewWidth = window.innerWidth;
+let viewHeight = window.innerHeight;
+let dpr = Math.min(2, window.devicePixelRatio || 1);
+
+function resizeCanvas() {
+  viewWidth = window.innerWidth;
+  viewHeight = window.innerHeight;
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = Math.floor(viewWidth * dpr);
+  canvas.height = Math.floor(viewHeight * dpr);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+let mode = 'title';
+let paused = false;
+let cameraZoom = 0.70;
+const ZOOM_PRESETS = [0.70, 0.90, 1.12];
+
+const player = {
+  x: 0, y: 0, r: 18,
+  hp: 100, maxHp: 100,
+  facing: 0,
+  walkAnim: 0,
+  dodgeCd: 0,
+  dodgeMaxCd: 3.2,
+  invuln: 0,
+  basicTimer: 0
+};
+
+let currentStage = null;
+let stageTime = 0;
+const STAGE_DURATION = 450;
+let stageKills = 0;
+let runLv = 1;
+let runXp = 0;
+let runNextXp = 35;
+let runSkills = [];
+let runBuffs = {};
+let rerollsUsed = 0;
+let miniBossSpawned = [false, false, false, false];
+let finalBossSpawned = false;
+let stageLoot = [];
+
+let enemies = [];
+let projectiles = [];
+let enemyProjs = [];
+let telegraphs = [];
+let gems = [];
+let particles = [];
+let floatTexts = [];
+let obstacles = [];
+let spawnTimer = 0;
+
+/* ==================== INPUT (KEYBOARD, JOYSTICK, PINCH) ==================== */
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if (e.code === 'Space' && mode !== 'title' && !paused) triggerDodge();
+  if (['1','2','3','4'].includes(e.key) && mode === 'stage') {
+    const idx = parseInt(e.key) - 1;
+    if (runSkills[idx]) {
+      runSkills[idx].auto = !runSkills[idx].auto;
+      renderSkillBar();
+    }
+  }
+});
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+window.addEventListener('wheel', e => {
+  if (mode === 'stage' && !paused) {
+    cameraZoom = Math.max(0.48, Math.min(1.25, cameraZoom - e.deltaY * 0.0008));
+    updateZoomBtn();
+  }
+}, { passive: true });
+
+let joyTouchId = null;
+let joyOrigin = { x: 0, y: 0 };
+let joyCurr = { x: 0, y: 0 };
+let joyVec = { x: 0, y: 0 };
+let pinchDist0 = 0;
+let pinchZoom0 = 0.70;
+
+canvas.addEventListener('touchstart', e => {
+  if (mode === 'title' || paused) return;
+  if (e.touches.length === 2 && mode === 'stage') {
+    joyTouchId = null;
+    joyVec = { x: 0, y: 0 };
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    pinchDist0 = Math.hypot(dx, dy);
+    pinchZoom0 = cameraZoom;
+    return;
+  }
+  if (e.touches.length === 1 && joyTouchId === null) {
+    const t = e.changedTouches[0];
+    joyTouchId = t.identifier;
+    joyOrigin = { x: t.clientX, y: t.clientY };
+    joyCurr = { x: t.clientX, y: t.clientY };
+    joyVec = { x: 0, y: 0 };
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  if (mode === 'title' || paused) return;
+  e.preventDefault();
+  if (e.touches.length === 2 && mode === 'stage' && pinchDist0 > 10) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    cameraZoom = Math.max(0.48, Math.min(1.25, pinchZoom0 * (dist / pinchDist0)));
+    updateZoomBtn();
+    return;
+  }
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    if (t.identifier === joyTouchId) {
+      joyCurr = { x: t.clientX, y: t.clientY };
+      const dx = joyCurr.x - joyOrigin.x;
+      const dy = joyCurr.y - joyOrigin.y;
+      const dist = Math.hypot(dx, dy);
+      const maxR = 48;
+      if (dist > 4) {
+        const cl = Math.min(dist, maxR) / maxR;
+        joyVec = { x: (dx / dist) * cl, y: (dy / dist) * cl };
+      } else {
+        joyVec = { x: 0, y: 0 };
+      }
+    }
+  }
+}, { passive: false });
+
+function endTouch(e) {
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    if (e.changedTouches[i].identifier === joyTouchId) {
+      joyTouchId = null;
+      joyVec = { x: 0, y: 0 };
+    }
+  }
+  if (e.touches.length < 2) pinchDist0 = 0;
+}
+canvas.addEventListener('touchend', endTouch);
+canvas.addEventListener('touchcancel', endTouch);
+
+function cycleZoom() {
+  const idx = ZOOM_PRESETS.findIndex(z => Math.abs(z - cameraZoom) < 0.06);
+  cameraZoom = ZOOM_PRESETS[(idx + 1) % ZOOM_PRESETS.length];
+  updateZoomBtn();
+}
+function updateZoomBtn() {
+  const b = document.getElementById('zoomBtn');
+  if (b) b.textContent = `🔍 ${cameraZoom.toFixed(2)}x`;
+}
+
+function triggerDodge(e) {
+  if (e) e.stopPropagation();
+  if (mode === 'title' || paused || player.dodgeCd > 0) return;
+  const cls = CLASSES[state.classId];
+  player.dodgeCd = player.dodgeMaxCd;
+  player.invuln = 0.55;
+  let dx = joyVec.x, dy = joyVec.y;
+  if (Math.hypot(dx, dy) < 0.1) {
+    dx = Math.cos(player.facing);
+    dy = Math.sin(player.facing);
+  } else {
+    const l = Math.hypot(dx, dy);
+    dx /= l; dy /= l;
+  }
+  for (let i = 0; i < 6; i++) {
+    particles.push({
+      x: player.x + dx * i * 16,
+      y: player.y + dy * i * 16,
+      vx: 0, vy: 0,
+      life: 0.35, maxLife: 0.35,
+      r: 14,
+      color: state.classId === 'kungfu' ? '#f8fafc' : '#38bdf8'
+    });
+  }
+  player.x += dx * 115;
+  player.y += dy * 115;
+  resolveObstacleCollision(player);
+  addFloatText(player.x, player.y - 24, cls.dodgeName + '!', '#fde047');
+  playTone(520, 'triangle', 0.12, 0.08);
+}
+
+/* ==================== OBSTACLES & COLLISION ==================== */
+function generateObstacles(isTown, obsType = 'pillar') {
+  obstacles = [];
+  if (isTown) {
+    obstacles.push({ x: -380, y: -220, w: 90, h: 55, type: 'wall' });
+    obstacles.push({ x: 290, y: -220, w: 90, h: 55, type: 'wall' });
+    obstacles.push({ x: -380, y: 150, w: 85, h: 55, type: 'crate' });
+    obstacles.push({ x: 295, y: 150, w: 85, h: 55, type: 'crate' });
+    return;
+  }
+  const count = 26;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+    const dist = 260 + Math.random() * 1150;
+    const ox = Math.cos(angle) * dist;
+    const oy = Math.sin(angle) * dist;
+    const isWide = Math.random() < 0.45;
+    obstacles.push({
+      x: ox - (isWide ? 55 : 28),
+      y: oy - (isWide ? 24 : 28),
+      w: isWide ? 110 : 56,
+      h: isWide ? 48 : 56,
+      type: obsType
+    });
+  }
+}
+
+function resolveObstacleCollision(ent) {
+  for (const o of obstacles) {
+    const closestX = Math.max(o.x, Math.min(ent.x, o.x + o.w));
+    const closestY = Math.max(o.y, Math.min(ent.y, o.y + o.h));
+    const dx = ent.x - closestX;
+    const dy = ent.y - closestY;
+    const distSq = dx * dx + dy * dy;
+    if (distSq < ent.r * ent.r) {
+      const dist = Math.sqrt(distSq) || 0.001;
+      const overlap = ent.r - dist;
+      ent.x += (dx / dist) * overlap;
+      ent.y += (dy / dist) * overlap;
+    }
+  }
+  const bound = mode === 'town' ? 460 : 1650;
+  ent.x = Math.max(-bound, Math.min(bound, ent.x));
+  ent.y = Math.max(-bound, Math.min(bound, ent.y));
+}
+
+/* ==================== TOWN & STAGE FLOW ==================== */
+function enterTown() {
+  mode = 'town';
+  paused = false;
+  currentStage = null;
+  enemies = [];
+  projectiles = [];
+  enemyProjs = [];
+  telegraphs = [];
+  gems = [];
+  particles = [];
+  player.x = 0;
+  player.y = 40;
+  const st = getComputedStats();
+  player.maxHp = st.maxHp;
+  player.hp = st.maxHp;
+  generateObstacles(true);
+
+  document.getElementById('titleOverlay').classList.add('hidden');
+  document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('townToolbar').classList.remove('hidden');
+  document.getElementById('stageToolbar').classList.add('hidden');
+  document.getElementById('stageTimeline').classList.add('hidden');
+  document.getElementById('bossHud').classList.add('hidden');
+  document.getElementById('skillBar').innerHTML = '';
+  document.getElementById('dodgeLabel').textContent = CLASSES[state.classId].dodgeName;
+  updateHud();
+  saveGame();
+}
+
+function startStage(stageObj) {
+  closeModal();
+  mode = 'stage';
+  paused = false;
+  currentStage = stageObj;
+  stageTime = 0;
+  stageKills = 0;
+  runLv = 1;
+  runXp = 0;
+  runNextXp = 32;
+  runSkills = [];
+  runBuffs = { skillDmg: 0, cdr: 0, proj: 0, area: 0, basicDmg: 0, pickup: 0 };
+  rerollsUsed = 0;
+  miniBossSpawned = [false, false, false, false];
+  finalBossSpawned = false;
+  stageLoot = [];
+
+  enemies = [];
+  projectiles = [];
+  enemyProjs = [];
+  telegraphs = [];
+  gems = [];
+  particles = [];
+  floatTexts = [];
+
+  const st = getComputedStats();
+  player.x = 0;
+  player.y = 0;
+  player.maxHp = st.maxHp;
+  player.hp = st.maxHp;
+  player.dodgeCd = 0;
+  player.basicTimer = 0;
+
+  generateObstacles(false, stageObj.obsType);
+
+  document.getElementById('townToolbar').classList.add('hidden');
+  document.getElementById('stageToolbar').classList.remove('hidden');
+  document.getElementById('stageTimeline').classList.remove('hidden');
+  document.getElementById('bossHud').classList.add('hidden');
+  document.getElementById('stageNameHud').textContent = stageObj.name;
+  document.getElementById('dodgeLabel').textContent = CLASSES[state.classId].dodgeName;
+  updateZoomBtn();
+  renderSkillBar();
+  updateHud();
+  showToast(`⚔️ 進入 ${stageObj.name}！先以基礎攻擊升至 Lv.2 抽取技能`);
+}
+
+function retreatToTown() {
+  endStage(false, true);
+}
+
+function endStage(victory, retreated = false) {
+  mode = 'town';
+  paused = true;
+  let goldReward = Math.round((15 + stageKills * 0.6) * (currentStage ? currentStage.id * 0.45 : 1));
+  let expReward = Math.round((25 + stageKills * 1.4) * (currentStage ? currentStage.id * 0.6 : 1));
+  let questPromoted = false;
+
+  if (victory && currentStage) {
+    goldReward += currentStage.id * 45;
+    expReward += currentStage.id * 75;
+    state.stageClears[currentStage.id] = (state.stageClears[currentStage.id] || 0) + 1;
+    if (state.questLv === currentStage.id && state.questLv < 10) {
+      state.questLv++;
+      questPromoted = true;
+    }
+    const bossGear = generateEquipment(currentStage.dropLv, Math.random() < 0.35 ? 3 : 2);
+    if (state.bag.length < 100) {
+      state.bag.push(bossGear);
+      stageLoot.push(bossGear);
+    }
+  }
+
+  state.gold += goldReward;
+  const leveledUp = gainHeroExp(expReward);
+  saveGame();
+
+  canCloseModal = false;
+  openDynamicModal(victory ? '🏆 關卡凱旋結算' : (retreated ? '🏃 撤退回城結算' : '💀 英雄力竭倒下'), `
+    <div style="text-align:center;padding:8px 0">
+      <div style="font-size:15px;font-weight:700;color:${victory ? '#4ade80' : '#fca5a5'};margin-bottom:8px">
+        ${victory ? `成功擊敗 ${currentStage.bossName}！` : (retreated ? '已安全撤離深淵戰場' : '首領攻勢極為致命，善用閃避與走位再戰！')}
+      </div>
+      ${questPromoted ? `<div style="background:rgba(230,194,91,0.18);border:1px solid var(--gold);padding:8px;border-radius:8px;margin-bottom:8px;color:var(--gold);font-weight:700">🎉 城鎮任務等級晉升至 Lv.${state.questLv}！已解鎖新關卡</div>` : ''}
+      ${leveledUp > 0 ? `<div style="color:#38bdf8;font-weight:700;margin-bottom:6px">⬆️ 英雄等級提升至 Lv.${state.heroLv}！(獲得屬性點、天賦點與祝福點)</div>` : ''}
+      <div style="font-size:13px;color:#e2e8f0;margin-bottom:10px">
+        擊殺魔物：<b>${stageKills}</b> | 獲得金幣：<b>+${goldReward}</b> | 英雄經驗：<b>+${expReward}</b>
+      </div>
+      <div style="font-size:12px;color:var(--gold);margin-bottom:6px">本場獲得裝備 (${stageLoot.length} 件已存入百格背包)：</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:130px;overflow-y:auto;margin-bottom:12px">
+        ${stageLoot.length ? stageLoot.map(it => `<span style="font-size:11px;padding:3px 7px;border-radius:6px;background:#161423;border:1px solid ${RARITIES[it.rarity].color};color:${RARITIES[it.rarity].color}">${it.icon} ${it.name} (Lv.${it.reqLv})</span>`).join('') : '<span style="font-size:11px;color:#94a3b8">無裝備掉落</span>'}
+      </div>
+      <button class="btn btn-gold" style="width:100%;padding:10px" onclick="canCloseModal=true;closeModal();enterTown()">返回庇護聖所</button>
+    </div>
+  `);
+}
+
+function gainHeroExp(amount) {
+  state.heroExp += amount;
+  let ups = 0;
+  while (state.heroExp >= state.heroLv * 65) {
+    state.heroExp -= state.heroLv * 65;
+    state.heroLv++;
+    state.statPts += 4;
+    state.treePts += 2;
+    state.blessingPts += 1;
+    ups++;
+  }
+  return ups;
+}
+
+/* ==================== COMBAT: BASIC ATTACKS, SKILLS & ENEMIES ==================== */
+function findNearestEnemy(x, y, maxRange = 900) {
+  let best = null, bestD = maxRange;
+  for (const e of enemies) {
+    const d = Math.hypot(e.x - x, e.y - y);
+    if (d < bestD) { bestD = d; best = e; }
+  }
+  return best;
+}
+
+function performBasicAttack(st) {
+  const cls = CLASSES[state.classId];
+  const target = findNearestEnemy(player.x, player.y, cls.attackType === 'melee' ? 145 : 540);
+  if (!target) return;
+  const angle = Math.atan2(target.y - player.y, target.x - player.x);
+  player.facing = angle;
+  const dmg = Math.round(st.atk * 0.85 * st.basicMult);
+
+  if (cls.attackType === 'melee') {
+    const range = 115 * st.areaMult;
+    particles.push({
+      type: 'arc', x: player.x, y: player.y, angle, r: range,
+      color: state.classId === 'kungfu' ? '#fde047' : (state.classId === 'paladin' ? '#facc15' : '#38bdf8'),
+      life: 0.22, maxLife: 0.22
+    });
+    playTone(210, 'sawtooth', 0.07, 0.05);
+    for (const e of enemies) {
+      const d = Math.hypot(e.x - player.x, e.y - player.y);
+      if (d <= range + e.r) {
+        const diff = Math.abs(Math.atan2(Math.sin(Math.atan2(e.y - player.y, e.x - player.x) - angle), Math.cos(Math.atan2(e.y - player.y, e.x - player.x) - angle)));
+        if (diff <= 1.25) {
+          damageEnemy(e, dmg, st);
+          if (!e.isBoss) {
+            e.x += Math.cos(angle) * 14;
+            e.y += Math.sin(angle) * 14;
+          }
+        }
+      }
+    }
+  } else {
+    const count = 1 + (runBuffs.basicProj || 0);
+    playTone(420, 'triangle', 0.06, 0.04);
+    for (let i = 0; i < count; i++) {
+      const spread = (i - (count - 1) / 2) * 0.14;
+      projectiles.push({
+        x: player.x, y: player.y,
+        vx: Math.cos(angle + spread) * 480,
+        vy: Math.sin(angle + spread) * 480,
+        r: 7, dmg, pierce: 1,
+        life: 1.25,
+        color: cls.color,
+        trail: []
+      });
+    }
+  }
+}
+
+function castAutoSkill(skEntry, st) {
+  const cls = CLASSES[state.classId];
+  const def = cls.skills.find(s => s.id === skEntry.id);
+  if (!def) return;
+  const target = findNearestEnemy(player.x, player.y, 680);
+  if (!target) return;
+
+  const lvMult = 1 + (skEntry.lv - 1) * 0.22;
+  const baseDmg = Math.round(st.atk * def.dmg * lvMult * st.skillDmgMult);
+  const count = 1 + st.extraProj + Math.floor((skEntry.lv - 1) / 2);
+  const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
+  const area = 95 * st.areaMult * (1 + (skEntry.lv - 1) * 0.08);
+
+  playTone(340 + Math.random() * 140, 'sine', 0.09, 0.05);
+
+  const heroPalette = ['#38bdf8', '#facc15', '#34d399', '#c084fc'];
+  const col = heroPalette[(def.name.length + skEntry.lv) % heroPalette.length];
+
+  if (['whirlwind', 'frost_nova', 'warcry', 'consecration', 'poison_nova', 'bear_shake', 'willow_step', 'monkey_flower', 'hot_foot_five'].includes(def.id)) {
+    const waves = def.id === 'hot_foot_five' ? Math.min(5, 2 + skEntry.lv) : 1;
+    for (let w = 0; w < waves; w++) {
+      particles.push({
+        type: 'ring', x: player.x, y: player.y,
+        r: area * (0.7 + w * 0.22),
+        color: col,
+        life: 0.35 + w * 0.08, maxLife: 0.35 + w * 0.08
+      });
+    }
+    for (const e of enemies) {
+      if (Math.hypot(e.x - player.x, e.y - player.y) <= area * 1.2 + e.r) {
+        damageEnemy(e, baseDmg * (def.id === 'hot_foot_five' ? 1.25 : 1), st);
+        if (def.id === 'frost_nova' || def.id === 'decrepify') e.slowTimer = 2.5;
+        if ((def.id === 'bear_shake' || def.id === 'warcry') && !e.isBoss) {
+          const pushA = Math.atan2(e.y - player.y, e.x - player.x);
+          e.x += Math.cos(pushA) * 38;
+          e.y += Math.sin(pushA) * 38;
+        }
+      }
+    }
+    if (def.id === 'consecration') {
+      player.hp = Math.min(player.maxHp, player.hp + Math.round(player.maxHp * 0.04));
+    }
+  } else if (['meteor', 'ground_slam', 'shadow_trap', 'corpse_explosion', 'flame_vortex', 'blade_rain', 'bone_prison', 'fist_of_heavens', 'judgment_beam'].includes(def.id)) {
+    for (let i = 0; i < count; i++) {
+      const pick = enemies[i % enemies.length] || target;
+      const blastR = area * 0.9;
+      particles.push({
+        type: 'ring', x: pick.x, y: pick.y,
+        r: blastR, color: col,
+        life: 0.4, maxLife: 0.4
+      });
+      for (const e of enemies) {
+        if (Math.hypot(e.x - pick.x, e.y - pick.y) <= blastR + e.r) {
+          damageEnemy(e, baseDmg, st);
+        }
+      }
+    }
+  } else {
+    for (let i = 0; i < count; i++) {
+      const spread = (i - (count - 1) / 2) * 0.18;
+      const a = baseAngle + spread;
+      const isPierce = ['pierce_volley', 'bone_spear', 'ice_lance', 'langzi_kick', 'blood_crescent'].includes(def.id);
+      projectiles.push({
+        x: player.x, y: player.y,
+        vx: Math.cos(a) * (isPierce ? 540 : 450),
+        vy: Math.sin(a) * (isPierce ? 540 : 450),
+        r: def.id === 'langzi_kick' || def.id === 'storm_sphere' ? 14 : 9,
+        dmg: baseDmg,
+        pierce: isPierce ? 4 + skEntry.lv : 2,
+        chain: def.id === 'chain_lightning' || def.id === 'smite_lightning' ? 3 + skEntry.lv : 0,
+        explode: def.id === 'explosive_arrow',
+        life: 1.5,
+        color: col,
+        trail: []
+      });
+    }
+  }
+}
+
+function damageEnemy(e, rawDmg, st) {
+  const isCrit = Math.random() < st.crit;
+  const dmg = Math.max(1, Math.round(rawDmg * (isCrit ? st.critDmg : 1)));
+  e.hp -= dmg;
+  e.hitFlash = 0.1;
+  addFloatText(e.x, e.y - e.r - 4, isCrit ? `💥${dmg}` : `${dmg}`, isCrit ? '#fde047' : '#e0f2fe');
+  if (e.hp <= 0 && !e.dead) {
+    e.dead = true;
+    onEnemyKilled(e, st);
+  }
+}
+
+function onEnemyKilled(e, st) {
+  stageKills++;
+  if (st.leech > 0) {
+    player.hp = Math.min(player.maxHp, player.hp + st.leech);
+  }
+  gems.push({ x: e.x, y: e.y, xp: e.isBoss ? 120 : (e.elite ? 22 : 9) });
+
+  const dropChance = e.isBoss ? 1.0 : (e.elite ? 0.32 : 0.045);
+  if (Math.random() < dropChance && state.bag.length < 100 && currentStage) {
+    const eq = generateEquipment(currentStage.dropLv, e.isBoss ? 2 : null);
+    state.bag.push(eq);
+    stageLoot.push(eq);
+    addFloatText(e.x, e.y - 26, `掉落: ${eq.name}`, RARITIES[eq.rarity].color);
+  }
+
+  if (e.isFinalBoss) {
+    setTimeout(() => endStage(true, false), 450);
+  }
+}
+
+/* ==================== MONSTERS & BOSSES ==================== */
+const MOB_TYPES = [
+  { name: '深淵爬行者', r: 15, hp: 34, spd: 88, color: '#64748b', horns: true },
+  { name: '血瞳狂犬', r: 14, hp: 28, spd: 118, color: '#991b1b', fangs: true },
+  { name: '腐化骸骨兵', r: 16, hp: 44, spd: 78, color: '#cbd5e1', crown: false },
+  { name: '暗影翼魔', r: 16, hp: 40, spd: 102, color: '#6b21a8', wings: true }
+];
+
+function spawnEnemy(forceElite = false) {
+  if (!currentStage || finalBossSpawned) return;
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 540 + Math.random() * 140;
+  const x = player.x + Math.cos(angle) * dist;
+  const y = player.y + Math.sin(angle) * dist;
+  const t = MOB_TYPES[Math.floor(Math.random() * MOB_TYPES.length)];
+  const timeScale = 1 + (stageTime / STAGE_DURATION) * 1.4;
+  const elite = forceElite || Math.random() < (0.04 + (stageTime / STAGE_DURATION) * 0.14);
+  const maxHp = Math.round(t.hp * currentStage.hpMult * timeScale * (elite ? 3.2 : 1));
+  enemies.push({
+    x, y,
+    r: elite ? t.r + 5 : t.r,
+    hp: maxHp, maxHp,
+    spd: t.spd * (elite ? 1.08 : 1),
+    color: t.color,
+    elite,
+    isBoss: false,
+    isFinalBoss: false,
+    meta: t,
+    hitFlash: 0,
+    slowTimer: 0
+  });
+}
+
+function spawnBoss(isFinal) {
+  if (!currentStage) return;
+  const angle = Math.random() * Math.PI * 2;
+  const x = player.x + Math.cos(angle) * 360;
+  const y = player.y + Math.sin(angle) * 360;
+
+  if (isFinal) {
+    finalBossSpawned = true;
+    enemies = enemies.filter(e => e.isBoss);
+    enemyProjs = [];
+    showToast(`⚠️ 終極首領【${currentStage.bossName}】降臨！小怪全數退散！`);
+  } else {
+    showToast(`🔥 精英小首領降臨！注意閃避地面紅圈大招！`);
+  }
+
+  const baseBossHp = isFinal ? 2600 : 880;
+  const maxHp = Math.round(baseBossHp * currentStage.hpMult);
+  const skills = isFinal
+    ? ['圓形深淵爆裂', '猩紅十字死光', '追蹤隕石陣', '毀滅扇形橫掃']
+    : ['暗紅衝擊波', '血焰隕石圈'];
+
+  enemies.push({
+    x, y,
+    r: isFinal ? 36 : 26,
+    hp: maxHp, maxHp,
+    spd: isFinal ? 76 : 84,
+    color: isFinal ? '#7f1d1d' : '#9f1239',
+    elite: true,
+    isBoss: true,
+    isFinalBoss: isFinal,
+    name: isFinal ? currentStage.bossName : `深淵護衛長`,
+    skills,
+    castTimer: 2.2,
+    casting: null,
+    hitFlash: 0,
+    slowTimer: 0
+  });
+}
+
+function dealBossLethalSkillDamage() {
+  const st = getComputedStats();
+  const stageFactor = 1 + (currentStage ? (currentStage.id - 1) * 0.025 : 0);
+  const rawHit = player.maxHp * 0.58 * stageFactor;
+  const finalDmg = Math.max(10, Math.round(rawHit * (1 - st.dr * 0.25)));
+  player.hp -= finalDmg;
+  player.invuln = 0.45;
+  addFloatText(player.x, player.y - 30, `💀重創 -${finalDmg}`, '#ef4444');
+  playTone(110, 'sawtooth', 0.25, 0.14);
+  if (player.hp <= 0) {
+    player.hp = 0;
+    endStage(false, false);
+  }
+}
+
+/* ==================== LEVEL UP & REROLL BLESSING SYSTEM ==================== */
+function getBlessingPool() {
+  const cls = CLASSES[state.classId];
+  const pool = [];
+  for (const sk of cls.skills) {
+    const owned = runSkills.find(s => s.id === sk.id);
+    if (owned) {
+      pool.push({
+        type: 'skill', id: sk.id, icon: sk.icon,
+        title: `${sk.name} (升至 Lv.${owned.lv + 1})`,
+        desc: `提升該自動技能傷害 +22% 與範圍`
+      });
+    } else if (runSkills.length < 4) {
+      pool.push({
+        type: 'skill', id: sk.id, icon: sk.icon,
+        title: `習得【${sk.name}】`,
+        desc: sk.desc
+      });
+    }
+  }
+  pool.push(
+    { type: 'buff', key: 'skillDmg', val: 0.18, icon: '💥', title: '毀滅增幅', desc: '全主動技能傷害 +18%' },
+    { type: 'buff', key: 'cdr', val: 0.10, icon: '⚡', title: '奧術極速', desc: '全主動技能冷卻縮減 +10%' },
+    { type: 'buff', key: 'proj', val: 1, icon: '🎯', title: '多重鎖定', desc: '所有技能額外目標與投射物數量 +1' },
+    { type: 'buff', key: 'area', val: 0.16, icon: '🌀', title: '領域擴張', desc: '全主動技能影響範圍半徑 +16%' },
+    { type: 'buff', key: 'basicDmg', val: 0.30, icon: '🗡️', title: '基礎武藝精進', desc: '基礎物理普通攻擊傷害 +30%' },
+    { type: 'heal', val: 0.35, icon: '❤️', title: '聖泉治癒', desc: '立即回復 35% 最大生命值' }
+  );
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, 3);
+}
+
+function showLevelUpModal() {
+  paused = true;
+  canCloseModal = false;
+  renderLevelUpCards();
+}
+
+function renderLevelUpCards() {
+  const cards = getBlessingPool();
+  const maxRerolls = state.blessings.rerollMax || 0;
+  const canReroll = rerollsUsed < maxRerolls;
+  const cost = REROLL_COSTS[rerollsUsed] || 50;
+  const enoughPts = state.blessingPts >= cost;
+
+  window._currentCards = cards;
+  openDynamicModal(`⬆️ 局內升級 (Lv.${runLv}) — 選擇一項祝福`, `
+    <div style="font-size:12px;color:#cbd5e1;margin-bottom:10px;text-align:center">
+      已裝備自動技能槽位：<b>${runSkills.length} / 4</b>
+    </div>
+    <div class="card-list">
+      ${cards.map((c, idx) => `
+        <div class="blessing-card" onclick="pickBlessingCard(${idx})">
+          <div>
+            <div style="font-size:24px;margin-bottom:4px">${c.icon}</div>
+            <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:4px">${c.title}</div>
+            <div style="font-size:12px;color:#e2e8f0;line-height:1.4">${c.desc}</div>
+          </div>
+          <div style="font-size:11px;color:#38bdf8;font-weight:700;margin-top:6px">點擊選擇 →</div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid #352f4d;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="font-size:12px;color:#fde047">持有祝福點數：<b>${state.blessingPts}</b> (本場重抽 ${rerollsUsed}/${maxRerolls} 次)</div>
+      <button class="btn btn-gold" ${(!canReroll || !enoughPts) ? 'disabled' : ''} onclick="rerollBlessingCards()">
+        ${maxRerolls === 0 ? '🔒 需至主城神諭祭司解鎖重抽' : (!canReroll ? '已達本場重抽上限' : `🎲 重新抽取 (消耗 ${cost} 祝福點)`)}
+      </button>
+    </div>
+  `);
+}
+
+function rerollBlessingCards() {
+  const maxRerolls = state.blessings.rerollMax || 0;
+  if (rerollsUsed >= maxRerolls) return;
+  const cost = REROLL_COSTS[rerollsUsed] || 50;
+  if (state.blessingPts < cost) return;
+  state.blessingPts -= cost;
+  rerollsUsed++;
+  saveGame();
+  playTone(620, 'sine', 0.12, 0.08);
+  renderLevelUpCards();
+}
+
+function pickBlessingCard(idx) {
+  const c = window._currentCards[idx];
+  if (!c) return;
+  if (c.type === 'skill') {
+    const existing = runSkills.find(s => s.id === c.id);
+    if (existing) existing.lv++;
+    else if (runSkills.length < 4) runSkills.push({ id: c.id, lv: 1, cdTimer: 0.4, auto: true });
+  } else if (c.type === 'buff') {
+    runBuffs[c.key] = (runBuffs[c.key] || 0) + c.val;
+  } else if (c.type === 'heal') {
+    player.hp = Math.min(player.maxHp, player.hp + Math.round(player.maxHp * c.val));
+  }
+  renderSkillBar();
+  canCloseModal = true;
+  closeModal();
+  paused = false;
+}
+
+/* ==================== MAIN UPDATE LOOP ==================== */
+let lastTime = performance.now();
+
+function update(dt) {
+  if (mode === 'title' || paused) return;
+
+  let mx = joyVec.x, my = joyVec.y;
+  if (keys['w'] || keys['arrowup']) my -= 1;
+  if (keys['s'] || keys['arrowdown']) my += 1;
+  if (keys['a'] || keys['arrowleft']) mx -= 1;
+  if (keys['d'] || keys['arrowright']) mx += 1;
+
+  const st = getComputedStats();
+  player.maxHp = st.maxHp;
+  if (player.hp > player.maxHp) player.hp = player.maxHp;
+
+  const mag = Math.hypot(mx, my);
+  if (mag > 0.05) {
+    const nx = mx / Math.max(1, mag);
+    const ny = my / Math.max(1, mag);
+    player.x += nx * st.spd * dt;
+    player.y += ny * st.spd * dt;
+    player.facing = Math.atan2(ny, nx);
+    player.walkAnim += dt * 11;
+    resolveObstacleCollision(player);
+  }
+
+  if (player.dodgeCd > 0) player.dodgeCd = Math.max(0, player.dodgeCd - dt);
+  if (player.invuln > 0) player.invuln = Math.max(0, player.invuln - dt);
+
+  if (mode === 'town') {
+    checkNearestNpc();
+    updateHud();
+    return;
+  }
+
+  stageTime += dt;
+
+  const miniTimes = [90, 180, 270, 360];
+  for (let i = 0; i < 4; i++) {
+    if (!miniBossSpawned[i] && stageTime >= miniTimes[i]) {
+      miniBossSpawned[i] = true;
+      spawnBoss(false);
+    }
+  }
+  if (!finalBossSpawned && stageTime >= STAGE_DURATION) {
+    spawnBoss(true);
+  }
+
+  if (!finalBossSpawned) {
+    const progress = Math.min(1, stageTime / STAGE_DURATION);
+    const interval = Math.max(0.22, 1.15 - progress * 0.90);
+    const maxMobs = Math.round(22 + progress * 68);
+    spawnTimer -= dt;
+    if (spawnTimer <= 0 && enemies.length < maxMobs) {
+      spawnTimer = interval;
+      const batch = progress > 0.65 ? 2 : 1;
+      for (let b = 0; b < batch; b++) spawnEnemy();
+    }
+  }
+
+  player.basicTimer -= dt;
+  if (player.basicTimer <= 0) {
+    player.basicTimer = Math.max(0.32, 0.85 * (1 - st.cdr * 0.4));
+    performBasicAttack(st);
+  }
+
+  const cls = CLASSES[state.classId];
+  for (const sk of runSkills) {
+    if (!sk.auto) continue;
+    sk.cdTimer -= dt;
+    if (sk.cdTimer <= 0) {
+      const def = cls.skills.find(s => s.id === sk.id);
+      sk.cdTimer = Math.max(0.45, (def ? def.cd : 2.5) * (1 - st.cdr));
+      castAutoSkill(sk, st);
+    }
+  }
+
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.trail.push({ x: p.x, y: p.y });
+    if (p.trail.length > 6) p.trail.shift();
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+    if (p.life <= 0) { projectiles.splice(i, 1); continue; }
+
+    for (const e of enemies) {
+      if (e.dead) continue;
+      if (Math.hypot(e.x - p.x, e.y - p.y) <= e.r + p.r) {
+        damageEnemy(e, p.dmg, st);
+        if (p.explode) {
+          particles.push({ type: 'ring', x: p.x, y: p.y, r: 65, color: '#facc15', life: 0.25, maxLife: 0.25 });
+          for (const e2 of enemies) {
+            if (e2 !== e && Math.hypot(e2.x - p.x, e2.y - p.y) <= 65 + e2.r) damageEnemy(e2, p.dmg * 0.65, st);
+          }
+        }
+        p.pierce--;
+        if (p.pierce <= 0) {
+          projectiles.splice(i, 1);
+          break;
+        }
+      }
+    }
+  }
+
+  let activeBoss = null;
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i];
+    if (e.dead) { enemies.splice(i, 1); continue; }
+    if (e.isBoss) activeBoss = e;
+    if (e.hitFlash > 0) e.hitFlash -= dt;
+    if (e.slowTimer > 0) e.slowTimer -= dt;
+
+    const spd = e.spd * (e.slowTimer > 0 ? 0.55 : 1);
+    const angle = Math.atan2(player.y - e.y, player.x - e.x);
+
+    if (e.isBoss && e.casting) {
+      e.casting.timer += dt;
+      if (e.casting.timer >= e.casting.maxTimer) {
+        const c = e.casting;
+        particles.push({ type: 'ring', x: c.x, y: c.y, r: c.r, color: '#ef4444', life: 0.35, maxLife: 0.35 });
+        if (player.invuln <= 0 && Math.hypot(player.x - c.x, player.y - c.y) <= c.r + player.r * 0.7) {
+          dealBossLethalSkillDamage();
+        }
+        e.casting = null;
+      }
+    } else {
+      e.x += Math.cos(angle) * spd * dt;
+      e.y += Math.sin(angle) * spd * dt;
+      if (!e.isBoss) resolveObstacleCollision(e);
+
+      if (e.isBoss) {
+        e.castTimer -= dt;
+        if (e.castTimer <= 0) {
+          e.castTimer = e.isFinalBoss ? 2.6 : 3.2;
+          const skName = e.skills[Math.floor(Math.random() * e.skills.length)];
+          e.casting = {
+            name: skName,
+            timer: 0,
+            maxTimer: 1.25,
+            x: player.x,
+            y: player.y,
+            r: e.isFinalBoss ? 115 : 92
+          };
+        }
+      }
+    }
+
+    if (Math.hypot(e.x - player.x, e.y - player.y) <= e.r + player.r) {
+      if (player.invuln <= 0) {
+        if (Math.random() < st.dodge) {
+          player.invuln = 0.35;
+          addFloatText(player.x, player.y - 24, '閃避!', '#38bdf8');
+        } else {
+          const touchDmg = Math.max(4, Math.round((8 * currentStage.dmgMult) * (1 - st.dr)));
+          player.hp -= touchDmg;
+          player.invuln = 0.55;
+          addFloatText(player.x, player.y - 24, `-${touchDmg}`, '#f87171');
+          if (player.hp <= 0) {
+            player.hp = 0;
+            endStage(false, false);
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  const bossHud = document.getElementById('bossHud');
+  if (activeBoss) {
+    bossHud.classList.remove('hidden');
+    document.getElementById('bossNameHud').textContent = `👹 ${activeBoss.name}`;
+    document.getElementById('bossHpBar').style.width = `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
+    document.getElementById('bossHpText').textContent = `${Math.max(0, activeBoss.hp)} / ${activeBoss.maxHp}`;
+  } else {
+    bossHud.classList.add('hidden');
+  }
+
+  for (let i = gems.length - 1; i >= 0; i--) {
+    const g = gems[i];
+    const d = Math.hypot(player.x - g.x, player.y - g.y);
+    if (d <= st.pickupRadius) {
+      g.x += ((player.x - g.x) / (d || 1)) * 360 * dt;
+      g.y += ((player.y - g.y) / (d || 1)) * 360 * dt;
+    }
+    if (d <= player.r + 12) {
+      runXp += g.xp;
+      gems.splice(i, 1);
+      if (runXp >= runNextXp) {
+        runXp -= runNextXp;
+        runLv++;
+        runNextXp = Math.round(runNextXp * 1.28 + 14);
+        showLevelUpModal();
+        break;
+      }
+    }
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    particles[i].life -= dt;
+    if (particles[i].life <= 0) particles.splice(i, 1);
+  }
+  for (let i = floatTexts.length - 1; i >= 0; i--) {
+    floatTexts[i].y -= 34 * dt;
+    floatTexts[i].life -= dt;
+    if (floatTexts[i].life <= 0) floatTexts.splice(i, 1);
+  }
+
+  updateHud();
+}
+
+/* ==================== RENDERING ==================== */
+function render() {
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = mode === 'stage' && currentStage ? currentStage.bg : '#13121c';
+  ctx.fillRect(0, 0, viewWidth, viewHeight);
+
+  if (mode === 'title') {
+    ctx.restore();
+    return;
+  }
+
+  const zoom = mode === 'stage' ? cameraZoom : 0.95;
+  ctx.translate(viewWidth / 2, viewHeight / 2);
+  ctx.scale(zoom, zoom);
+  ctx.translate(-player.x, -player.y);
+
+  const bound = mode === 'town' ? 460 : 1650;
+  const gridStep = 80;
+  ctx.strokeStyle = mode === 'stage' && currentStage ? currentStage.grid : '#211f30';
+  ctx.lineWidth = 1.5;
+  const startX = Math.floor((player.x - viewWidth / zoom) / gridStep) * gridStep;
+  const endX = player.x + viewWidth / zoom;
+  const startY = Math.floor((player.y - viewHeight / zoom) / gridStep) * gridStep;
+  const endY = player.y + viewHeight / zoom;
+  ctx.beginPath();
+  for (let gx = Math.max(-bound, startX); gx <= Math.min(bound, endX); gx += gridStep) {
+    ctx.moveTo(gx, -bound);
+    ctx.lineTo(gx, bound);
+  }
+  for (let gy = Math.max(-bound, startY); gy <= Math.min(bound, endY); gy += gridStep) {
+    ctx.moveTo(-bound, gy);
+    ctx.lineTo(bound, gy);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = mode === 'town' ? '#e6c25b' : '#ef4444';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(-bound, -bound, bound * 2, bound * 2);
+
+  if (mode === 'town') {
+    ctx.beginPath();
+    ctx.arc(0, -150, 56, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  for (const o of obstacles) {
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(o.x + 5, o.y + 7, o.w, o.h);
+    if (o.type === 'tree') ctx.fillStyle = '#1e3a29';
+    else if (o.type === 'crate') ctx.fillStyle = '#5c3a21';
+    else if (o.type === 'crystal') ctx.fillStyle = '#1e3a5f';
+    else if (o.type === 'obsidian') ctx.fillStyle = '#27172e';
+    else ctx.fillStyle = '#334155';
+    ctx.fillRect(o.x, o.y, o.w, o.h);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(o.x, o.y, o.w, o.h);
+  }
+
+  if (mode === 'town') {
+    for (const n of NPCS) {
+      drawHeroSprite(n.x, n.y, n.color, 'M', 'paladin', 0, n.name, n.icon);
+    }
+  }
+
+  for (const g of gems) {
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(g.x, g.y - 6);
+    ctx.lineTo(g.x + 5, g.y);
+    ctx.lineTo(g.x, g.y + 6);
+    ctx.lineTo(g.x - 5, g.y);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  for (const e of enemies) {
+    if (e.isBoss && e.casting) {
+      const c = e.casting;
+      const ratio = Math.min(1, c.timer / c.maxTimer);
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([8, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(220, 38, 38, 0.35)';
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r * ratio, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#09090f';
+      ctx.fillRect(e.x - 42, e.y - e.r - 26, 84, 8);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(e.x - 41, e.y - e.r - 25, 82 * ratio, 6);
+      ctx.fillStyle = '#fecaca';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(c.name, e.x, e.y - e.r - 30);
+    }
+  }
+
+  for (const e of enemies) {
+    drawMonsterSprite(e);
+  }
+
+  const cls = CLASSES[state.classId];
+  drawHeroSprite(player.x, player.y, cls.color, state.gender, state.classId, player.walkAnim, '', '');
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of projectiles) {
+    if (p.trail.length > 1) {
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.r * 1.1;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(p.trail[0].x, p.trail[0].y);
+      for (const pt of p.trail) ctx.lineTo(pt.x, pt.y);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * 0.65, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * 1.25, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (const pt of particles) {
+    const alpha = Math.max(0, pt.life / pt.maxLife);
+    ctx.globalAlpha = alpha;
+    if (pt.type === 'ring') {
+      ctx.strokeStyle = pt.color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, pt.r * (1.1 - alpha * 0.2), 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (pt.type === 'arc') {
+      ctx.strokeStyle = pt.color;
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, pt.r * 0.85, pt.angle - 1.1, pt.angle + 1.1);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, pt.r * alpha, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  for (const ft of floatTexts) {
+    ctx.globalAlpha = Math.min(1, ft.life * 2);
+    ctx.fillStyle = ft.color;
+    ctx.fillText(ft.text, ft.x, ft.y);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+
+  if (joyTouchId !== null) {
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.strokeStyle = 'rgba(230, 194, 91, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(joyOrigin.x, joyOrigin.y, 48, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(230, 194, 91, 0.35)';
+    ctx.beginPath();
+    ctx.arc(joyOrigin.x + joyVec.x * 48, joyOrigin.y + joyVec.y * 48, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawHeroSprite(x, y, color, gender, classId, walkAnim, label = '', icon = '') {
+  const bob = Math.sin(walkAnim) * 2.5;
+  ctx.save();
+  ctx.translate(x, y);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath();
+  ctx.ellipse(0, 16, 14, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (classId === 'kungfu') {
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(-9, 4 + bob * 0.3, 8, 12);
+    ctx.fillRect(1, 4 - bob * 0.3, 8, 12);
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath();
+    ctx.roundRect(-11, -7 + bob, 22, 14, 4);
+    ctx.fill();
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-11, 3 + bob, 22, 3);
+    ctx.fillStyle = '#fed7aa';
+    ctx.beginPath();
+    ctx.arc(0, -15 + bob, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#9a3412';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(-3, -18 + bob, 4, Math.PI * 1.1, Math.PI * 1.6);
+    ctx.stroke();
+    if (gender === 'F') {
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-9, -17 + bob);
+      ctx.lineTo(9, -17 + bob);
+      ctx.stroke();
+    }
+  } else {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(-11, -6 + bob, 22, 18, 5);
+    ctx.fill();
+    ctx.fillStyle = '#fde68a';
+    ctx.beginPath();
+    ctx.arc(0, -14 + bob, 9.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = gender === 'F' ? '#f472b6' : '#334155';
+    if (gender === 'F') {
+      ctx.beginPath();
+      ctx.arc(0, -15 + bob, 11, Math.PI, 0);
+      ctx.lineTo(12, -4 + bob);
+      ctx.lineTo(-12, -4 + bob);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(0, -16 + bob, 10, Math.PI, 0);
+      ctx.fill();
+    }
+  }
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-4, -15 + bob, 2.2, 2.5);
+  ctx.fillRect(2, -15 + bob, 2.2, 2.5);
+
+  if (label) {
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fde047';
+    ctx.fillText(`${icon} ${label}`, 0, -30);
+  }
+  ctx.restore();
+}
+
+function drawMonsterSprite(e) {
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath();
+  ctx.ellipse(0, e.r * 0.85, e.r * 0.9, e.r * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : e.color;
+  ctx.beginPath();
+  ctx.arc(0, 0, e.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = e.isBoss ? '#ef4444' : (e.elite ? '#facc15' : '#1e1b2e');
+  ctx.lineWidth = e.isBoss ? 3 : 1.8;
+  ctx.stroke();
+
+  ctx.fillStyle = e.isBoss ? '#facc15' : '#cbd5e1';
+  ctx.beginPath();
+  ctx.moveTo(-e.r * 0.6, -e.r * 0.6);
+  ctx.lineTo(-e.r * 0.9, -e.r * 1.25);
+  ctx.lineTo(-e.r * 0.2, -e.r * 0.8);
+  ctx.moveTo(e.r * 0.6, -e.r * 0.6);
+  ctx.lineTo(e.r * 0.9, -e.r * 1.25);
+  ctx.lineTo(e.r * 0.2, -e.r * 0.8);
+  ctx.fill();
+
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(-e.r * 0.32, -e.r * 0.12, e.r * 0.16, 0, Math.PI * 2);
+  ctx.arc(e.r * 0.32, -e.r * 0.12, e.r * 0.16, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (!e.isBoss && e.hp < e.maxHp) {
+    ctx.fillStyle = '#09090f';
+    ctx.fillRect(-14, -e.r - 9, 28, 4);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(-14, -e.r - 9, 28 * Math.max(0, e.hp / e.maxHp), 4);
+  }
+  ctx.restore();
+}
+
+function addFloatText(x, y, text, color) {
+  floatTexts.push({ x, y, text, color, life: 0.75 });
+}
+
+function showToast(msg) {
+  addFloatText(player.x, player.y - 38, msg, '#fde047');
+}
+
+/* ==================== UI & MODALS ==================== */
+function renderTitleClasses() {
+  const grid = document.getElementById('classGrid');
+  grid.innerHTML = Object.values(CLASSES).map(c => `
+    <div class="class-card ${selectedClass === c.id ? 'selected' : ''}" onclick="selectedClass='${c.id}';renderTitleClasses()">
+      <div style="font-size:22px">${c.icon}</div>
+      <div style="font-size:14px;font-weight:700;color:${c.color};margin:2px 0">${c.name}</div>
+      <div style="font-size:11px;color:#cbd5e1;line-height:1.35">${c.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectGender(g) {
+  selectedGender = g;
+  document.getElementById('genderM').classList.toggle('selected', g === 'M');
+  document.getElementById('genderF').classList.toggle('selected', g === 'F');
+}
+
+function startNewGame() {
+  state = createDefaultState();
+  state.classId = selectedClass;
+  state.gender = selectedGender;
+  const starter = generateEquipment(1, 0);
+  starter.slot = 'weapon';
+  starter.icon = '⚔️';
+  starter.name = '普通·學徒武器';
+  state.equipped.weapon = starter;
+  enterTown();
+}
+
+function continueGame() {
+  if (loadGame()) enterTown();
+}
+
+function updateHud() {
+  const cls = CLASSES[state.classId];
+  document.getElementById('hudTitle').textContent = mode === 'town'
+    ? `庇護聖所 · ${cls.name}(${state.gender === 'M' ? '男' : '女'})`
+    : `${cls.name} · 局內 Lv.${runLv}`;
+  document.getElementById('hudSub').textContent = `英雄 Lv.${state.heroLv} | 任務 Lv.${state.questLv} | 💰${state.gold}`;
+
+  document.getElementById('hpBar').style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+  document.getElementById('hpText').textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+
+  const xpRatio = mode === 'stage' ? (runXp / runNextXp) : (state.heroExp / (state.heroLv * 65));
+  document.getElementById('xpBar').style.width = `${Math.min(100, xpRatio * 100)}%`;
+  document.getElementById('xpText').textContent = mode === 'stage'
+    ? `局內經驗 ${Math.floor(xpRatio * 100)}%`
+    : `英雄經驗 ${Math.floor(xpRatio * 100)}%`;
+
+  const sb = document.getElementById('statBadge');
+  sb.textContent = state.statPts;
+  sb.classList.toggle('hidden', state.statPts <= 0);
+
+  const tb = document.getElementById('treeBadge');
+  tb.textContent = state.treePts;
+  tb.classList.toggle('hidden', state.treePts <= 0);
+
+  document.getElementById('dodgeCdText').textContent = player.dodgeCd > 0 ? `${player.dodgeCd.toFixed(1)}s` : '就緒';
+
+  if (mode === 'stage') {
+    const m = String(Math.floor(stageTime / 60)).padStart(2, '0');
+    const s = String(Math.floor(stageTime % 60)).padStart(2, '0');
+    document.getElementById('stageClock').textContent = `${m}:${s} / 07:30`;
+    document.getElementById('tlFill').style.width = `${Math.min(100, (stageTime / STAGE_DURATION) * 100)}%`;
+    document.getElementById('killCountHud').textContent = `擊殺: ${stageKills}`;
+    renderSkillBar();
+  }
+}
+
+function renderSkillBar() {
+  const bar = document.getElementById('skillBar');
+  if (mode !== 'stage') { bar.innerHTML = ''; return; }
+  const cls = CLASSES[state.classId];
+  let html = '';
+  for (let i = 0; i < 4; i++) {
+    const sk = runSkills[i];
+    if (!sk) {
+      html += `<div class="skill-slot"><span style="font-size:10px;color:#64748b">空槽</span></div>`;
+    } else {
+      const def = cls.skills.find(s => s.id === sk.id);
+      const pct = Math.min(100, Math.max(0, (sk.cdTimer / (def ? def.cd : 2.5)) * 100));
+      html += `
+        <div class="skill-slot active" onclick="runSkills[${i}].auto=!runSkills[${i}].auto;renderSkillBar()">
+          <span style="font-size:20px">${def ? def.icon : '✨'}</span>
+          <span class="skill-lv">Lv.${sk.lv}</span>
+          <span class="skill-auto">${sk.auto ? 'AUTO' : 'OFF'}</span>
+          <div class="skill-cd-mask" style="height:${pct}%"></div>
+        </div>
+      `;
+    }
+  }
+  bar.innerHTML = html;
+}
+
+/* ==================== NPC INTERACTION ==================== */
+let nearestNpc = null;
+function checkNearestNpc() {
+  let best = null, bestD = 95;
+  for (const n of NPCS) {
+    const d = Math.hypot(player.x - n.x, player.y - n.y);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  nearestNpc = best;
+  const btn = document.getElementById('npcInteractBtn');
+  if (best) {
+    btn.classList.remove('hidden');
+    btn.textContent = `💬 與【${best.name}】對話`;
+  } else {
+    btn.classList.add('hidden');
+  }
+}
+
+function interactNearestNpc() {
+  if (!nearestNpc) return;
+  if (nearestNpc.id === 'cain') openStageSelectModal();
+  else if (nearestNpc.id === 'priestess') openBlessingNpcModal();
+  else if (nearestNpc.id === 'smith') openBlacksmithModal();
+  else if (nearestNpc.id === 'kadala') openKadalaModal();
+  else if (nearestNpc.id === 'lilith') openClassSwitchModal();
+}
+
+/* ==================== MODAL BUILDERS ==================== */
+function openDynamicModal(title, bodyHtml, headerExtraHtml = '') {
+  document.getElementById('dynTitle').textContent = title;
+  document.getElementById('dynBody').innerHTML = bodyHtml;
+  document.getElementById('dynHeaderActions').innerHTML = headerExtraHtml + (canCloseModal ? `<button class="btn" onclick="closeModal()">✕</button>` : '');
+  document.getElementById('dynamicOverlay').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('dynamicOverlay').classList.add('hidden');
+  paused = false;
+}
+
+function openModal(type) {
+  if (mode === 'stage') return;
+  canCloseModal = true;
+  if (type === 'equipModal') renderEquipModal();
+  else if (type === 'statModal') renderStatModal();
+  else if (type === 'treeModal') renderTreeModal();
+  else if (type === 'saveModal') renderSaveModal();
+}
+
+function openStageSelectModal() {
+  canCloseModal = true;
+  openDynamicModal('⚔️ 遠征指揮官・凱恩 — 十大深淵關卡', `
+    <div style="font-size:12px;color:#cbd5e1;margin-bottom:10px">
+      當前城鎮任務等級：<b>Lv.${state.questLv}</b>（通關最高進度關卡即可晉升任務等級並解鎖下一關）
+    </div>
+    ${STAGES.map(st => {
+      const unlocked = state.questLv >= st.reqQuest;
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#161423;border:1px solid ${unlocked ? '#4c436e' : '#262238'};border-radius:10px;padding:10px;margin-bottom:8px;opacity:${unlocked ? 1 : 0.55}">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:${unlocked ? 'var(--gold)' : '#94a3b8'}">${st.name}</div>
+            <div style="font-size:11px;color:#cbd5e1">掉落裝備等級：<b>Lv.${st.dropLv}</b> | 守關首領：${st.bossName}</div>
+          </div>
+          <button class="btn ${unlocked ? 'btn-gold' : ''}" ${!unlocked ? 'disabled' : ''} onclick='startStage(${JSON.stringify(st)})'>
+            ${unlocked ? '出發挑戰' : `需任務 Lv.${st.reqQuest}`}
+          </button>
+        </div>
+      `;
+    }).join('')}
+  `);
+}
+
+function openBlessingNpcModal() {
+  canCloseModal = true;
+  const b = state.blessings;
+  const items = [
+    { key: 'rerollMax', name: '🎲 命運重鑄（升級重抽上限）', max: 5, cost: 1, desc: `提升單場升級三選一可重抽卡片的次數上限（目前 ${b.rerollMax}/5 次）` },
+    { key: 'cdr', name: '⚡ 聖言急速', max: 10, cost: 1, desc: `永久全技能冷卻縮減 +3%/級（目前 +${b.cdr * 3}%）` },
+    { key: 'critDmg', name: '💥 暴擊祝福', max: 10, cost: 1, desc: `永久暴擊傷害 +12%/級（目前 +${b.critDmg * 12}%）` },
+    { key: 'hp', name: '❤️ 生命祈願', max: 10, cost: 1, desc: `永久最大生命 +6%/級（目前 +${b.hp * 6}%）` },
+    { key: 'pickup', name: '🧲 靈魂磁場', max: 8, cost: 1, desc: `永久寶石拾取範圍 +15%/級（目前 +${b.pickup * 15}%）` },
+    { key: 'luck', name: '🍀 秘寶眷顧', max: 10, cost: 1, desc: `永久高階裝備掉率提升（目前 Lv.${b.luck}）` }
+  ];
+  openDynamicModal('✨ 神諭祭司・艾莉絲 — 祝福強化殿堂', `
+    <div style="background:rgba(253,224,71,0.12);border:1px solid var(--gold);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px">
+      持有祝福點數：<b style="color:var(--gold);font-size:15px">${state.blessingPts}</b>（英雄每升 1 級獲得 +1 點；亦可用於關卡內重抽技能卡片）
+    </div>
+    ${items.map(it => {
+      const lv = b[it.key] || 0;
+      const maxed = lv >= it.max;
+      return `
+        <div class="stat-row">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--gold)">${it.name} (${lv}/${it.max})</div>
+            <div style="font-size:11px;color:#cbd5e1">${it.desc}</div>
+          </div>
+          <button class="btn btn-gold" ${(maxed || state.blessingPts < it.cost) ? 'disabled' : ''} onclick="upgradeBlessing('${it.key}',${it.max})">
+            ${maxed ? '已滿級' : '強化 (-1點)'}
+          </button>
+        </div>
+      `;
+    }).join('')}
+  `);
+}
+
+function upgradeBlessing(key, max) {
+  if (state.blessingPts < 1 || (state.blessings[key] || 0) >= max) return;
+  state.blessingPts--;
+  state.blessings[key] = (state.blessings[key] || 0) + 1;
+  saveGame();
+  openBlessingNpcModal();
+}
+
+function renderEquipModal() {
+  const st = getComputedStats();
+  const slotsHtml = EQUIP_SLOTS.map(s => {
+    const it = state.equipped[s.id];
+    return `
+      <div class="equip-slot ${it ? 'rarity-' + it.rarity : ''}" onclick="unequipSlot('${s.id}')">
+        <div style="font-size:16px">${it ? it.icon : s.icon}</div>
+        <div style="font-size:10px;font-weight:700">${s.name}</div>
+        <div style="font-size:9px;color:${it ? RARITIES[it.rarity].color : '#64748b'}">${it ? `Lv.${it.reqLv} +${it.enhance}` : '未裝備'}</div>
+      </div>
+    `;
+  }).join('');
+
+  const filtered = state.bag.filter(it => {
+    if (bagFilter === 'weapon') return ['weapon', 'offhand'].includes(it.slot);
+    if (bagFilter === 'armor') return ['hat', 'armor', 'pants', 'boots'].includes(it.slot);
+    if (bagFilter === 'acc') return ['head1', 'head2', 'acc1', 'acc2'].includes(it.slot);
+    return true;
+  });
+
+  let bagCells = '';
+  for (let i = 0; i < 100; i++) {
+    const it = filtered[i];
+    if (!it) {
+      bagCells += `<div class="bag-cell" style="opacity:0.35"></div>`;
+    } else {
+      const canWear = state.heroLv >= it.reqLv;
+      bagCells += `
+        <div class="bag-cell rarity-${it.rarity}" onclick="inspectBagItem('${it.uid}')">
+          <div style="font-size:16px">${it.icon}</div>
+          <div style="font-size:9px;font-weight:700;color:${canWear ? '#e2e8f0' : '#ef4444'}">Lv.${it.reqLv}</div>
+        </div>
+      `;
+    }
+  }
+
+  openDynamicModal('🎒 裝備欄 (10部位) & 百格背包', `
+    <div style="font-size:11px;color:#cbd5e1;margin-bottom:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <span>戰力：攻擊 <b>${st.atk}</b> | 生命 <b>${st.maxHp}</b> | 暴擊 <b>${(st.crit*100).toFixed(1)}%</b> | 冷卻 <b>${(st.cdr*100).toFixed(1)}%</b></span>
+      <span>背包：<b>${state.bag.length}/100</b></span>
+    </div>
+    <div class="equip-grid">${slotsHtml}</div>
+    <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">
+      <button class="btn ${bagFilter==='all'?'btn-gold':''}" onclick="bagFilter='all';renderEquipModal()">全部</button>
+      <button class="btn ${bagFilter==='weapon'?'btn-gold':''}" onclick="bagFilter='weapon';renderEquipModal()">武器/副手</button>
+      <button class="btn ${bagFilter==='armor'?'btn-gold':''}" onclick="bagFilter='armor';renderEquipModal()">防具</button>
+      <button class="btn ${bagFilter==='acc'?'btn-gold':''}" onclick="bagFilter='acc';renderEquipModal()">頭飾/飾品</button>
+      <button class="btn btn-red" onclick="salvageCommon()">分解白/藍裝換金幣</button>
+    </div>
+    <div id="itemInspectBox" style="margin-bottom:8px"></div>
+    <div class="bag-grid">${bagCells}</div>
+  `, `<button class="btn btn-gold" onclick="autoEquipStrongest()">⚡ 一鍵自動裝備最強</button>`);
+}
+
+function inspectBagItem(uid) {
+  const it = state.bag.find(x => x.uid === uid);
+  if (!it) return;
+  const canWear = state.heroLv >= it.reqLv;
+  document.getElementById('itemInspectBox').innerHTML = `
+    <div style="background:#1a172b;border:1px solid ${RARITIES[it.rarity].color};border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${RARITIES[it.rarity].color}">${it.icon} ${it.name} (+${it.enhance})</div>
+        <div style="font-size:11px;color:#cbd5e1">需求英雄等級：<b style="color:${canWear?'#4ade80':'#ef4444'}">Lv.${it.reqLv}</b> | 攻擊 +${it.atk} | 生命 +${it.hp} ${it.crit?`| 暴擊 +${(it.crit*100).toFixed(1)}%`:''} ${it.cdr?`| 冷卻 +${(it.cdr*100).toFixed(1)}%`:''}</div>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-green" ${!canWear?'disabled':''} onclick="equipItem('${it.uid}')">${canWear?'裝備':'等級不足'}</button>
+        <button class="btn btn-red" onclick="sellItem('${it.uid}')">售出</button>
+      </div>
+    </div>
+  `;
+}
+
+function equipItem(uid) {
+  const idx = state.bag.findIndex(x => x.uid === uid);
+  if (idx === -1) return;
+  const it = state.bag[idx];
+  if (state.heroLv < it.reqLv) return;
+  state.bag.splice(idx, 1);
+  if (state.equipped[it.slot]) state.bag.push(state.equipped[it.slot]);
+  state.equipped[it.slot] = it;
+  saveGame();
+  renderEquipModal();
+  updateHud();
+}
+
+function unequipSlot(slotId) {
+  const it = state.equipped[slotId];
+  if (!it || state.bag.length >= 100) return;
+  state.equipped[slotId] = null;
+  state.bag.push(it);
+  saveGame();
+  renderEquipModal();
+  updateHud();
+}
+
+function sellItem(uid) {
+  const idx = state.bag.findIndex(x => x.uid === uid);
+  if (idx === -1) return;
+  const it = state.bag.splice(idx, 1)[0];
+  state.gold += (it.rarity + 1) * 12 + it.reqLv * 2;
+  saveGame();
+  renderEquipModal();
+  updateHud();
+}
+
+function salvageCommon() {
+  let gain = 0;
+  state.bag = state.bag.filter(it => {
+    if (it.rarity <= 1) {
+      gain += (it.rarity + 1) * 10 + it.reqLv * 2;
+      return false;
+    }
+    return true;
+  });
+  state.gold += gain;
+  saveGame();
+  renderEquipModal();
+  updateHud();
+  showToast(`💰 已分解低階裝備，獲得 ${gain} 金幣`);
+}
+
+function renderStatModal() {
+  const defs = [
+    { key: 'str', name: '💪 力量 (STR)', desc: '提升基礎攻擊力與暴擊傷害' },
+    { key: 'agi', name: '🏃 敏捷 (AGI)', desc: '提升移動速度與閃避機率' },
+    { key: 'int', name: '🧠 智力 (INT)', desc: '提升技能傷害倍率與冷卻縮減' },
+    { key: 'vit', name: '❤️ 體質 (VIT)', desc: '提升最大生命值與物理/法術減傷' },
+    { key: 'luk', name: '🍀 幸運 (LUK)', desc: '提升暴擊機率與高階裝備掉落率' }
+  ];
+  openDynamicModal('📊 人物五大屬性配點', `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:13px;color:var(--gold)">可用屬性點數：<b>${state.statPts}</b></span>
+      <button class="btn" onclick="resetStats()">免費洗點重置</button>
+    </div>
+    ${defs.map(d => `
+      <div class="stat-row">
+        <div>
+          <div style="font-size:13px;font-weight:700">${d.name}：<span style="color:var(--gold)">${state.stats[d.key]}</span></div>
+          <div style="font-size:11px;color:#94a3b8">${d.desc}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn" ${state.stats[d.key]<=0?'disabled':''} onclick="modStat('${d.key}',-1)">－</button>
+          <button class="btn btn-gold" ${state.statPts<=0?'disabled':''} onclick="modStat('${d.key}',1)">＋</button>
+        </div>
+      </div>
+    `).join('')}
+  `);
+}
+
+function modStat(k, delta) {
+  if (delta > 0 && state.statPts <= 0) return;
+  if (delta < 0 && state.stats[k] <= 0) return;
+  state.stats[k] += delta;
+  state.statPts -= delta;
+  saveGame();
+  renderStatModal();
+  updateHud();
+}
+
+function resetStats() {
+  let total = 0;
+  for (const k of Object.keys(state.stats)) { total += state.stats[k]; state.stats[k] = 0; }
+  state.statPts += total;
+  saveGame();
+  renderStatModal();
+  updateHud();
+}
+
+function renderTreeModal() {
+  const cls = CLASSES[state.classId];
+  const tree = cls.trees[activeTreeTab] || cls.trees[0];
+  const branchInvested = tree.nodes.reduce((sum, n) => sum + (state.treeNodes[n.id] || 0), 0);
+
+  openDynamicModal(`🌳 ${cls.name} — 三流派技能樹`, `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--gold)">可用天賦點數：<b>${state.treePts}</b> | 本分支已投入：<b>${branchInvested}</b> 點</span>
+      <button class="btn" onclick="resetTree()">重置天賦</button>
+    </div>
+    <div class="tree-tabs">
+      ${cls.trees.map((t, i) => `<button class="tree-tab ${activeTreeTab===i?'active':''}" onclick="activeTreeTab=${i};renderTreeModal()">${t.name}</button>`).join('')}
+    </div>
+    ${tree.nodes.map((n, tierIdx) => {
+      const reqPts = TIER_THRESHOLDS[tierIdx] || 0;
+      const unlocked = branchInvested >= reqPts;
+      const lv = state.treeNodes[n.id] || 0;
+      return `
+        <div class="tree-node ${!unlocked ? 'locked' : ''}">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:${unlocked ? 'var(--gold)' : '#94a3b8'}">
+              [T${tierIdx + 1}] ${n.name} (${lv}/${n.max})
+            </div>
+            <div style="font-size:11px;color:#cbd5e1">${n.desc}</div>
+            ${!unlocked ? `<div style="font-size:10px;color:#f87171">🔒 需先在本流派累積投入 ${reqPts} 點（目前 ${branchInvested}/${reqPts}）</div>` : ''}
+          </div>
+          <button class="btn btn-gold" ${(!unlocked || lv >= n.max || state.treePts <= 0) ? 'disabled' : ''} onclick="investTree('${n.id}',${n.max},${reqPts})">
+            ${lv >= n.max ? '已滿' : '＋1'}
+          </button>
+        </div>
+      `;
+    }).join('')}
+  `);
+}
+
+function investTree(nodeId, max, reqPts) {
+  const cls = CLASSES[state.classId];
+  const tree = cls.trees[activeTreeTab];
+  const branchInvested = tree.nodes.reduce((sum, n) => sum + (state.treeNodes[n.id] || 0), 0);
+  if (branchInvested < reqPts || state.treePts <= 0) return;
+  const cur = state.treeNodes[nodeId] || 0;
+  if (cur >= max) return;
+  state.treeNodes[nodeId] = cur + 1;
+  state.treePts--;
+  saveGame();
+  renderTreeModal();
+  updateHud();
+}
+
+function resetTree() {
+  let sum = 0;
+  for (const k of Object.keys(state.treeNodes)) sum += state.treeNodes[k];
+  state.treeNodes = {};
+  state.treePts += sum;
+  saveGame();
+  renderTreeModal();
+  updateHud();
+}
+
+function openBlacksmithModal() {
+  canCloseModal = true;
+  openDynamicModal('⚒️ 鐵匠・赫菲斯托斯 — 裝備鍛造強化', `
+    <div style="font-size:12px;color:#cbd5e1;margin-bottom:8px">持有金幣：<b>💰 ${state.gold}</b>（每強化 +1 提升該裝備 12% 基礎攻防）</div>
+    ${EQUIP_SLOTS.map(s => {
+      const it = state.equipped[s.id];
+      if (!it) return '';
+      const cost = (it.enhance + 1) * 45 + it.reqLv * 6;
+      return `
+        <div class="stat-row">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:${RARITIES[it.rarity].color}">${it.icon} ${it.name} (+${it.enhance})</div>
+            <div style="font-size:11px;color:#94a3b8">攻 +${Math.round(it.atk*(1+it.enhance*0.12))} | 血 +${Math.round(it.hp*(1+it.enhance*0.12))}</div>
+          </div>
+          <button class="btn btn-gold" ${(it.enhance>=15 || state.gold<cost)?'disabled':''} onclick="enhanceSlot('${s.id}',${cost})">
+            ${it.enhance>=15 ? '已達上限' : `強化 (💰${cost})`}
+          </button>
+        </div>
+      `;
+    }).join('') || '<div style="color:#94a3b8;font-size:12px">目前身上尚未穿戴任何裝備</div>'}
+  `);
+}
+
+function enhanceSlot(slotId, cost) {
+  const it = state.equipped[slotId];
+  if (!it || state.gold < cost || it.enhance >= 15) return;
+  state.gold -= cost;
+  it.enhance++;
+  saveGame();
+  openBlacksmithModal();
+  updateHud();
+}
+
+function openKadalaModal() {
+  canCloseModal = true;
+  const stageObj = STAGES[Math.min(STAGES.length - 1, state.questLv - 1)];
+  const cost = 60 + stageObj.dropLv * 5;
+  openDynamicModal('💰 神秘軍需官・卡達拉 — 神秘盲盒', `
+    <div style="text-align:center;padding:12px 0">
+      <div style="font-size:13px;color:#cbd5e1;margin-bottom:8px">
+        依據目前任務等級（Lv.${state.questLv}），可抽取 <b>Lv.${stageObj.dropLv}</b> 神秘裝備（高機率獲得稀有與傳奇品質）！
+      </div>
+      <div style="font-size:14px;color:var(--gold);margin-bottom:12px">持有金幣：<b>💰 ${state.gold}</b> | 背包：<b>${state.bag.length}/100</b></div>
+      <button class="btn btn-gold" style="padding:10px 22px" ${(state.gold < cost || state.bag.length >= 100) ? 'disabled' : ''} onclick="buyMysteryBox(${stageObj.dropLv},${cost})">
+        🎁 抽取神秘裝備 (💰 ${cost})
+      </button>
+      <div id="kadalaResult" style="margin-top:12px"></div>
+    </div>
+  `);
+}
+
+function buyMysteryBox(dropLv, cost) {
+  if (state.gold < cost || state.bag.length >= 100) return;
+  state.gold -= cost;
+  const r = Math.random() < 0.25 ? 3 : (Math.random() < 0.65 ? 2 : 1);
+  const eq = generateEquipment(dropLv, r);
+  state.bag.push(eq);
+  saveGame();
+  openKadalaModal();
+  document.getElementById('kadalaResult').innerHTML = `<span style="color:${RARITIES[eq.rarity].color};font-weight:700">✨ 獲得：${eq.icon} ${eq.name} (Lv.${eq.reqLv})！</span>`;
+  updateHud();
+}
+
+function openClassSwitchModal() {
+  canCloseModal = true;
+  openDynamicModal('🔮 秘法學者・莉莉絲 — 職業與性別轉換', `
+    <div class="gender-row">
+      <button class="gender-btn ${state.gender==='M'?'selected':''}" onclick="state.gender='M';saveGame();openClassSwitchModal()">♂ 男性英雄</button>
+      <button class="gender-btn ${state.gender==='F'?'selected':''}" onclick="state.gender='F';saveGame();openClassSwitchModal()">♀ 女性英雄</button>
+    </div>
+    <div class="class-grid">
+      ${Object.values(CLASSES).map(c => `
+        <div class="class-card ${state.classId===c.id?'selected':''}" onclick="switchClass('${c.id}')">
+          <div style="font-size:20px">${c.icon}</div>
+          <div style="font-size:13px;font-weight:700;color:${c.color}">${c.name}</div>
+          <div style="font-size:10px;color:#cbd5e1">${c.desc}</div>
+        </div>
+      `).join('')}
+    </div>
+  `);
+}
+
+function switchClass(cid) {
+  if (state.classId === cid) return;
+  resetTree();
+  state.classId = cid;
+  document.getElementById('dodgeLabel').textContent = CLASSES[cid].dodgeName;
+  saveGame();
+  openClassSwitchModal();
+  updateHud();
+}
+
+function renderSaveModal() {
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+  openDynamicModal('💾 本地存檔與備份還原', `
+    <div style="font-size:12px;color:#cbd5e1;margin-bottom:8px">系統每次結算與變更皆會自動存檔。你也可以複製下方存檔代碼備份或轉移至其他設備：</div>
+    <textarea id="saveCodeArea" style="width:100%;height:90px;background:#0b0b12;color:#38bdf8;border:1px solid #3f385c;border-radius:8px;padding:8px;font-size:11px">${code}</textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn btn-gold" onclick="saveGame(false)">立即保存</button>
+      <button class="btn btn-green" onclick="importSaveCode()">匯入上方代碼還原</button>
+    </div>
+  `);
+}
+
+function importSaveCode() {
+  try {
+    const raw = document.getElementById('saveCodeArea').value.trim();
+    const json = decodeURIComponent(escape(atob(raw)));
+    localStorage.setItem(SAVE_KEY, json);
+    loadGame();
+    closeModal();
+    enterTown();
+    showToast('✅ 存檔代碼還原成功！');
+  } catch (e) {
+    alert('存檔代碼格式無效');
+  }
+}
+
+/* ==================== BOOTSTRAP ==================== */
+renderTitleClasses();
+if (loadGame()) {
+  const box = document.getElementById('continueBox');
+  box.classList.remove('hidden');
+  const cls = CLASSES[state.classId] || CLASSES.mage;
+  document.getElementById('saveSummaryText').textContent = `${cls.icon} ${cls.name} (${state.gender==='M'?'男':'女'}) | 英雄 Lv.${state.heroLv} | 任務 Lv.${state.questLv}`;
+}
+
+function gameLoop(now) {
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  try {
+    update(dt);
+    render();
+  } catch (err) {
+    window.onerror(err.message, 'loop', 0);
+  }
+  requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
